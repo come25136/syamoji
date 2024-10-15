@@ -157,7 +157,7 @@ internal class ProgramGuideRowAdapter(
                 channelLogoView.visibility = View.GONE
                 return
             }
-            val imageUrl = channel.imageUrl
+            val imageUrl = channel.logoUrl
             if (imageUrl == null) {
                 channelLogoView.visibility = View.GONE
             } else {

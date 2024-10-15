@@ -65,26 +65,17 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
 
-    <ImageView
-        android:id="@+id/programguide_detail_image"
-        style="@style/ProgramGuide.Image.Detail"
-        android:layout_marginStart="@dimen/programguide_page_left_padding"
-        android:contentDescription="@string/programguide_content_description_large_thumbnail"
-        android:background="@drawable/programguide_tile_placeholder"
-        android:src="@drawable/programguide_icon_placeholder"
-        app:layout_constraintBottom_toBottomOf="@id/bottom_detail"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="@id/bottom_detail" />
-
     <TextView
         android:id="@+id/programguide_detail_title"
         style="@style/ProgramGuide.Text.Detail.Title"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
+        android:layout_width="wrap_content"
+        android:layout_height="28dp"
+        android:layout_marginStart="32dp"
         android:gravity="start"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toEndOf="@id/programguide_detail_image"
-        app:layout_constraintTop_toTopOf="@id/programguide_detail_image"
+        app:layout_constraintBottom_toBottomOf="@id/bottom_detail"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@id/bottom_detail"
+        app:layout_constraintVertical_bias="0.161"
         tools:text="NPO Politiek" />
 
     <TextView

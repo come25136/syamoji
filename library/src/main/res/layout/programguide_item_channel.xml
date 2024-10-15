@@ -27,14 +27,14 @@
 
     <TextView
         android:id="@+id/programguide_channel_name"
-        style="@style/ProgramGuide.Text.Channel"
+        style="@style/ProgramGuide.Text.id.come25136.syamoji.Channel"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         tools:text="NPO Zappelin Xtra" />
 
     <ImageView
         android:id="@+id/programguide_channel_logo"
-        style="@style/ProgramGuide.Image.Channel"
+        style="@style/ProgramGuide.Image.id.come25136.syamoji.Channel"
         android:contentDescription="@string/programguide_content_description_channel_logo"
         android:visibility="gone"
         tools:visibility="visible" />

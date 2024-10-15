@@ -37,8 +37,8 @@ class ProgramGuideManager<T> {
         internal val ENTRY_MIN_DURATION = TimeUnit.MINUTES.toMillis(2) // 2 min
         private val MAX_UNACCOUNTED_TIME_BEFORE_GAP = TimeUnit.MINUTES.toMillis(15) // 15 min
 
-        private const val DAY_STARTS_AT_HOUR = 5
-        private const val DAY_ENDS_NEXT_DAY_AT_HOUR = 6
+        private const val DAY_STARTS_AT_HOUR = 0
+        private const val DAY_ENDS_NEXT_DAY_AT_HOUR = 0
 
         private val TAG: String = ProgramGuideManager::class.java.name
     }
@@ -117,6 +117,7 @@ class ProgramGuideManager<T> {
                         selectedDate.atStartOfDay(timeZone).withHour(DAY_STARTS_AT_HOUR)
                     val timelineEndsAt =
                         timelineStartsAt.plusDays(1).withHour(DAY_ENDS_NEXT_DAY_AT_HOUR)
+//                            .plusSeconds(-1) // 表示外なのに次の番組表情が表示されるので23:59:59のような時刻にしたい
 
                     val timelineStartsAtMillis = timelineStartsAt.toEpochSecond() * 1_000
                     val timelineEndsAtMillis = timelineEndsAt.toEpochSecond() * 1_000

@@ -59,7 +59,7 @@
         <item name="android:layout_marginTop">6dp</item>
     </style>
 
-    <style name="ProgramGuide.Text.Channel" parent="">
+    <style name="ProgramGuide.Text.id.come25136.syamoji.Channel" parent="">
         <item name="android:fontFamily">@font/open_sans_regular</item>
         <item name="android:textSize">12sp</item>
         <item name="android:textColor">@color/programguide_channel_text_color</item>
@@ -81,7 +81,7 @@
         <item name="android:minHeight">0dp</item>
     </style>
 
-    <style name="ProgramGuide.Image.Channel" parent="">
+    <style name="ProgramGuide.Image.id.come25136.syamoji.Channel" parent="">
         <item name="android:layout_width">36dp</item>
         <item name="android:layout_height">wrap_content</item>
         <item name="android:layout_marginTop">7dp</item>

@@ -56,4 +56,11 @@ dependencies {
     implementation(libs.rxjava.v310)
     implementation(libs.rxandroid)
     implementation(libs.adapter.rxjava3)
+
+    implementation(libs.simple.xml)
+    implementation(libs.okhttp)
+    implementation(libs.androidx.espresso.core)
+
+    implementation(libs.m3u.parser)
+    implementation(libs.androidx.media3.session)
 }

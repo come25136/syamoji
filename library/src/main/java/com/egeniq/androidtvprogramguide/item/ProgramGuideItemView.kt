@@ -87,7 +87,8 @@ class ProgramGuideItemView<T> : FrameLayout {
             isClickable = scheduleItem.isClickable
         }
         title =
-            if (title?.isEmpty() == true) resources.getString(R.string.programguide_title_no_program) else title
+            if (title?.isEmpty() == true)
+                resources.getString(R.string.programguide_title_no_program) else title
 
         updateText(title)
         initProgress(

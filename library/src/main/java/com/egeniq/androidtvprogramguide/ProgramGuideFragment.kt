@@ -90,8 +90,8 @@ abstract class ProgramGuideFragment<T> : Fragment(), ProgramGuideManager.Listene
     protected val FILTER_DATE_FORMATTER: DateTimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE
 
     // Config values, override in subclass if necessary
-    protected open val DISPLAY_LOCALE = Locale("ja", "JP")
-    protected open val DISPLAY_TIMEZONE: ZoneId = ZoneOffset.ofHours(9)
+    protected open val DISPLAY_LOCALE = Locale("en", "US")
+    protected open val DISPLAY_TIMEZONE: ZoneId = ZoneOffset.UTC
     protected open val SELECTABLE_DAYS_IN_PAST = 7
     protected open val SELECTABLE_DAYS_IN_FUTURE = 7
     protected open val USE_HUMAN_DATES = true
