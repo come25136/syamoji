@@ -20,7 +20,14 @@ class MainActivity : AppCompatActivity() {
 //            insets
 //        }
 
-        AndroidThreeTen.init(this)
+//        startActivity(Intent(this, CommentActivity::class.java))
+//        return
+
+        try {
+            AndroidThreeTen.init(this)
+        } catch (e: Exception) {
+
+        }
 
         supportFragmentManager.beginTransaction()
             .replace(R.id.fragment_container, EpgFragment())

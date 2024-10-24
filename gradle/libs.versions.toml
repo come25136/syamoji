@@ -1,6 +1,7 @@
 [versions]
 agp = "8.6.0"
 appcompatVersion = "1.7.0"
+danmakuflamemaster = "0.4.5"
 exoplayer = "2.19.1"
 kotlin = "1.9.0"
 coreKtx = "1.13.1"
@@ -30,6 +31,7 @@ androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = 
 androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
 androidx-leanback = { module = "androidx.leanback:leanback", version.ref = "leanback" }
 converter-gson = { module = "com.squareup.retrofit2:converter-gson", version.ref = "retrofit" }
+danmakuflamemaster = { module = "com.github.Bilibili:DanmakuFlameMaster", version.ref = "danmakuflamemaster" }
 exoplayer = { module = "com.google.android.exoplayer:exoplayer", version.ref = "exoplayer" }
 m3u-parser = { module = "com.github.bjoernpetersen:m3u-parser", version.ref = "m3uParser" }
 material = { group = "com.google.android.material", name = "material", version.ref = "material" }
