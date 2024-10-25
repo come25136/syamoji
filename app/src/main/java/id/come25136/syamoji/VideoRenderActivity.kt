@@ -22,6 +22,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 @UnstableApi
@@ -49,10 +50,11 @@ class VideoRenderActivity : AppCompatActivity() {
         // テスト用に定期的にコメントを追加
         commentAdderJob.launch {
             while (!commentRender.isInitialized()){
-                delay(100)
-            }
-            while (commentRender.isInitialized()) {
                 delay(100L)
+            }
+
+            while (isActive) {
+                delay(25L)
                 val autoComment = Comment(
                     text = "自動コメント ${System.currentTimeMillis()}",
                     color = Color.WHITE,

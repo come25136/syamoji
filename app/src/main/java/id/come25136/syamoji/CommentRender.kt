@@ -1,4 +1,3 @@
-// app/src/main/java/id/come25136/syamoji/CommentRender.kt
 package id.come25136.syamoji
 
 import android.content.Context
@@ -6,16 +5,11 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
+import android.graphics.PixelFormat
 import android.graphics.PorterDuff
 import android.util.AttributeSet
-import android.view.View
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import android.view.SurfaceHolder
+import android.view.SurfaceView
 import kotlin.random.Random
 
 data class Comment(
@@ -23,70 +17,51 @@ data class Comment(
     val color: Int = Color.WHITE,
     var x: Float = 0f,
     var y: Float = 0f,
-    var velocity: Float = 5f, // コメントの移動速度
-    var lane: Int = 0, // コメントが所属するレーン番号
-    var textWidth: Float = 0f, // テキスト幅のキャッシュ
-    var bitmap: Bitmap? = null // テキストをレンダリングしたビットマップ
+    var velocity: Float = 5f,
+    var lane: Int = 0,
+    var textWidth: Float = 0f,
+    var bitmap: Bitmap? = null
 )
 
 class CommentRender @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null
-) : View(context, attrs) {
+) : SurfaceView(context, attrs), SurfaceHolder.Callback {
 
-    private val comments = mutableListOf<Comment>() // 全コメントを保持
+    private val comments = mutableListOf<Comment>()
     private val paint = Paint().apply {
         isAntiAlias = true
     }
-    private var job: Job? = null
-    private val lanes = mutableListOf<MutableList<Comment>>() // レーンごとのコメントリスト
-    private var laneHeight: Float = 0f // レーンの高さ
+    private var drawThread: Thread? = null
+    private var drawing = false
+    private val lanes = mutableListOf<MutableList<Comment>>()
+    private var laneHeight: Float = 0f
     private var maxLanes = 0
 
-    // グローバル設定
-    private val globalFontSize = 40f // グローバルなフォントサイズ
-    private val spacing = 20f // コメント間の最小スペース（ピクセル単位）
-    private val topPadding = 10f // ビューの上部パディング（ピクセル単位）
+    private val globalFontSize = 40f
+    private val spacing = 20f
+    private val topPadding = 10f
 
-    // フォントメトリクスの取得
     private val fontMetrics = paint.fontMetrics
-    private val ascent = fontMetrics.ascent // 負の値
-    private val descent = fontMetrics.descent // 正の値
-    private val totalFontHeight = (-ascent) + descent // フォントの総高さ
-
-    // バックグラウンド用のPaintインスタンス
-    private val backgroundPaint = Paint().apply {
-        isAntiAlias = true
-        textSize = globalFontSize
-    }
+    private val ascent = fontMetrics.ascent
+    private val descent = fontMetrics.descent
+    private val totalFontHeight = (-ascent) + descent
 
     private var lastTime = System.currentTimeMillis()
 
     init {
         paint.textSize = globalFontSize
-    }
-
-    private var bitmap: Bitmap? = null
-    private var bitmapCanvas: Canvas? = null
-    override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
-        super.onSizeChanged(w, h, oldw, oldh)
-        laneHeight = calculateLaneHeight()
-        maxLanes = (h / laneHeight).toInt().coerceAtLeast(1) // 最低1レーン
-        lanes.clear()
-        for (i in 0 until maxLanes) {
-            lanes.add(mutableListOf())
-        }
-        bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
-        bitmapCanvas = Canvas(bitmap!!)
+        holder.addCallback(this)
+        holder.setFormat(PixelFormat.TRANSLUCENT)
+        setZOrderOnTop(true)
     }
 
     private fun calculateLaneHeight(): Float {
         return totalFontHeight + spacing
     }
 
-    // コメントを追加するメソッド
     fun addComment(comment: Comment) {
-        CoroutineScope(Dispatchers.Default).launch {
-            comment.textWidth = backgroundPaint.measureText(comment.text)
+        Thread {
+            comment.textWidth = paint.measureText(comment.text)
             paint.color = comment.color
             val textBitmap = createTextBitmap(comment.text, paint)
             comment.bitmap = textBitmap
@@ -94,10 +69,7 @@ class CommentRender @JvmOverloads constructor(
 
             val availableLaneIndex = lanes.indices.find { lane ->
                 val lastCommentInLane = lanes[lane].lastOrNull()
-                if (lastCommentInLane != null) {
-                    return@find (lastCommentInLane.x + lastCommentInLane.textWidth + spacing) < width.toFloat()
-                }
-                true
+                lastCommentInLane == null || (lastCommentInLane.x + lastCommentInLane.textWidth + spacing) < width.toFloat()
             }
 
             if (availableLaneIndex != null) {
@@ -108,19 +80,20 @@ class CommentRender @JvmOverloads constructor(
                 val randomLane = Random.nextInt(0, maxLanes)
                 comment.lane = randomLane
                 comment.y = topPadding + (randomLane * laneHeight) + (-ascent)
-                lanes[randomLane].add(comment)
+                synchronized(lanes[randomLane]) {
+                    lanes[randomLane].add(comment)
+                }
             }
 
-            withContext(Dispatchers.Main) {
+            synchronized(comments) {
                 comments.add(comment)
                 if (comments.size > 300) {
                     removeOldestComment()
                 }
             }
-        }
+        }.start()
     }
 
-    // テキストをビットマップにレンダリングする関数
     private fun createTextBitmap(text: String, paint: Paint): Bitmap {
         val width = paint.measureText(text).toInt()
         val height = (paint.descent() - paint.ascent()).toInt()
@@ -137,76 +110,75 @@ class CommentRender @JvmOverloads constructor(
         }
     }
 
-    private var drawing = false
-    override fun onDraw(canvas: Canvas) {
-        super.onDraw(canvas)
+    private fun drawComments(canvas: Canvas?) {
+        if (canvas == null) return
 
-        val fps = 30
+        val fps = 60
         val availableTime = 1000 / fps
         val elapsedTime = System.currentTimeMillis() - lastTime
         if (elapsedTime < availableTime) {
-            bitmap?.let {
-                canvas.drawBitmap(it, 0f, 0f, null)
-            }
-
-            return
+//            return
         }
         lastTime = System.currentTimeMillis()
 
-        drawing = true
-
-//        canvas.drawColor(Color.TRANSPARENT) // 背景をクリア
-        bitmapCanvas!!.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);
-
-        for (lane in lanes) {
-            val iterator = lane.iterator()
-            while (iterator.hasNext()) {
-                try {
-                    val comment = iterator.next()
-                    if (comment.bitmap != null) {
-                        bitmapCanvas!!.drawBitmap(comment.bitmap!!, comment.x, comment.y, null)
+        canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR)
+        synchronized(comments) {
+            for (lane in lanes) {
+                synchronized(lane) {
+                    val iterator = lane.iterator()
+                    synchronized(iterator) {
+                        while (iterator.hasNext()) {
+                            val comment = iterator.next()
+                            synchronized(comment) {
+                                comment.bitmap?.let {
+                                    canvas.drawBitmap(it, comment.x, comment.y, null)
+                                }
+                                comment.x -= comment.velocity * (elapsedTime / availableTime)
+                                if (comment.x < -comment.textWidth) {
+                                    iterator.remove()
+                                    comments.remove(comment)
+                                }
+                            }
+                        }
                     }
-
-                    comment.x -= comment.velocity * (elapsedTime / availableTime)
-                    if (comment.x < -comment.textWidth) {
-                        iterator.remove()
-                        comments.remove(comment)
-                    }
-                } catch (e: Exception) {
-                    break
                 }
             }
         }
-
-        bitmap?.let {
-            canvas.drawBitmap(it, 0f, 0f, null)
-        }
-
-                drawing = false
     }
 
-    private var _isInitialized = false
-    override fun onAttachedToWindow() {
-        super.onAttachedToWindow()
-
-        _isInitialized = true
-
-        job = CoroutineScope(Dispatchers.Default).launch {
-
-            while (isActive) {
-                delay(5)
-//                Log.d("CommentRender", "${elapsedTime}, ${availableTime - elapsedTime}")
-                postInvalidate() // 描画をリクエスト
-            }
+    private var _initialized = false
+    override fun surfaceCreated(holder: SurfaceHolder) {
+        laneHeight = calculateLaneHeight()
+        maxLanes = (height / laneHeight).toInt().coerceAtLeast(1)
+        lanes.clear()
+        for (i in 0 until maxLanes) {
+            lanes.add(mutableListOf())
         }
+
+        drawing = true
+        drawThread = Thread {
+            while (drawing) {
+                val canvas = holder.lockHardwareCanvas()
+                try {
+                    drawComments(canvas)
+                } finally {
+                    holder.unlockCanvasAndPost(canvas)
+                }
+                Thread.sleep(5)  // とりあえず回す
+            }
+        }.apply { start() }
+
+        _initialized = true
     }
 
     fun isInitialized(): Boolean {
-        return _isInitialized
+        return _initialized
     }
 
-    override fun onDetachedFromWindow() {
-        super.onDetachedFromWindow()
-        job?.cancel()
+    override fun surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) {}
+
+    override fun surfaceDestroyed(holder: SurfaceHolder) {
+        drawing = false
+        drawThread?.join()  // スレッド終了待ち
     }
 }
