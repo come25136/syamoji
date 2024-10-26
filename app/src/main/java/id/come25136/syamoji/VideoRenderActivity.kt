@@ -17,20 +17,23 @@ import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
 import androidx.media3.ui.PlayerView
 import com.google.common.util.concurrent.MoreExecutors
+import id.come25136.syamoji.nx_jikkyo.WebSocketListener
+import id.come25136.syamoji.nx_jikkyo.WebSocketManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import org.json.JSONObject
 
 @UnstableApi
-class VideoRenderActivity : AppCompatActivity() {
+class VideoRenderActivity : AppCompatActivity(), WebSocketListener {
     private lateinit var playerView: PlayerView
     private lateinit var spinner: ProgressBar
     private lateinit var streamUrl: String
     private lateinit var mediaController: MediaController
+    private lateinit var webSocketManager: WebSocketManager
 
     private lateinit var commentRender: CommentRender
     private val commentAdderJob = CoroutineScope(Dispatchers.Default + Job())
@@ -48,22 +51,22 @@ class VideoRenderActivity : AppCompatActivity() {
         commentRender = findViewById(R.id.commentRender)
 
         // テスト用に定期的にコメントを追加
-        commentAdderJob.launch {
-            while (!commentRender.isInitialized()){
-                delay(100L)
-            }
-
-            while (isActive) {
-                delay(25L)
-                val autoComment = Comment(
-                    text = "自動コメント ${System.currentTimeMillis()}",
-                    color = Color.WHITE,
-//                    size = 60f,
-                    velocity = 10f
-                )
-                commentRender.addComment(autoComment)
-            }
-        }
+//        commentAdderJob.launch {
+//            while (!commentRender.isInitialized()){
+//                delay(100L)
+//            }
+//
+//            while (isActive) {
+//                delay(25L)
+//                val autoComment = Comment(
+//                    text = "自動コメント ${System.currentTimeMillis()}",
+//                    color = Color.WHITE,
+////                    size = 60f,
+//                    velocity = 10f
+//                )
+//                commentRender.addComment(autoComment)
+//            }
+//        }
 
         streamUrl = intent.getStringExtra("streamUrl")!!
 
@@ -174,6 +177,9 @@ class VideoRenderActivity : AppCompatActivity() {
             },
             MoreExecutors.directExecutor()
         )
+
+        webSocketManager =
+            WebSocketManager("wss://nx-jikkyo.tsukumijima.net/api/v1/channels/jk9/ws/comment", this)
     }
 
     private fun retryPlayback() {
@@ -187,5 +193,26 @@ class VideoRenderActivity : AppCompatActivity() {
         mediaController.release()
 
         commentAdderJob.cancel()
+
+        webSocketManager.close()
+    }
+
+    // WebSocketListenerの実装
+    override fun onMessageReceived(message: JSONObject) {
+        val chat = message.has("chat")
+        if (!chat) return
+
+        // UIに反映する処理などをここに追加
+        while (!commentRender.isInitialized()) {
+            Thread.sleep(100L)
+        }
+
+        val autoComment = Comment(
+            text = message.getJSONObject("chat").getString("content"),
+            color = Color.WHITE,
+//                    size = 60f,
+            velocity = 10f
+        )
+        commentRender.addComment(autoComment)
     }
 }

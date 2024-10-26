@@ -19,7 +19,7 @@ data class Comment(
     val color: Int = Color.WHITE,
     var x: Float = 0f,
     var y: Float = 0f,
-    var velocity: Float = 5f,
+    var velocity: Float = 2.5f,
     var lane: Int = 0,
     var textWidth: Float = 0f,
     var bitmap: Bitmap? = null
