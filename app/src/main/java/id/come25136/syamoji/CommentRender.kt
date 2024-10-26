@@ -8,9 +8,11 @@ import android.graphics.Paint
 import android.graphics.PixelFormat
 import android.graphics.PorterDuff
 import android.util.AttributeSet
+import android.util.Log
 import android.view.SurfaceHolder
 import android.view.SurfaceView
 import kotlin.random.Random
+import kotlin.system.measureTimeMillis
 
 data class Comment(
     val text: String,
@@ -52,7 +54,7 @@ class CommentRender @JvmOverloads constructor(
         paint.textSize = globalFontSize
         holder.addCallback(this)
         holder.setFormat(PixelFormat.TRANSLUCENT)
-        setZOrderOnTop(true)
+//        setZOrderOnTop(true)
     }
 
     private fun calculateLaneHeight(): Float {
@@ -117,26 +119,29 @@ class CommentRender @JvmOverloads constructor(
         val availableTime = 1000 / fps
         val elapsedTime = System.currentTimeMillis() - lastTime
         if (elapsedTime < availableTime) {
-//            return
+//            Thread.sleep(availableTime - elapsedTime)
         }
         lastTime = System.currentTimeMillis()
 
         canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR)
-        synchronized(comments) {
-            for (lane in lanes) {
-                synchronized(lane) {
-                    val iterator = lane.iterator()
-                    synchronized(iterator) {
-                        while (iterator.hasNext()) {
-                            val comment = iterator.next()
-                            synchronized(comment) {
-                                comment.bitmap?.let {
-                                    canvas.drawBitmap(it, comment.x, comment.y, null)
-                                }
-                                comment.x -= comment.velocity * (elapsedTime / availableTime)
-                                if (comment.x < -comment.textWidth) {
-                                    iterator.remove()
-                                    comments.remove(comment)
+
+        val time = measureTimeMillis {
+            synchronized(comments) {
+                for (lane in lanes) {
+                    synchronized(lane) {
+                        val iterator = lane.iterator()
+                        synchronized(iterator) {
+                            while (iterator.hasNext()) {
+                                val comment = iterator.next()
+                                synchronized(comment) {
+                                    comment.bitmap?.let {
+                                        canvas.drawBitmap(it, comment.x, comment.y, null)
+                                    }
+                                    comment.x -= comment.velocity * (elapsedTime / availableTime)
+                                    if (comment.x < -comment.textWidth) {
+                                        iterator.remove()
+                                        comments.remove(comment)
+                                    }
                                 }
                             }
                         }
@@ -144,6 +149,7 @@ class CommentRender @JvmOverloads constructor(
                 }
             }
         }
+//        Log.d("CommentRender", "drawComments: ${time}ms")
     }
 
     private var _initialized = false
@@ -158,13 +164,21 @@ class CommentRender @JvmOverloads constructor(
         drawing = true
         drawThread = Thread {
             while (drawing) {
-                val canvas = holder.lockHardwareCanvas()
+                val canvas: Canvas
+                val time = measureTimeMillis {
+                    canvas = holder.lockHardwareCanvas()
+                }
+                Log.d("CommentRender", "lockCanvas: ${time}ms")
                 try {
                     drawComments(canvas)
                 } finally {
-                    holder.unlockCanvasAndPost(canvas)
+                    val time = measureTimeMillis {
+                        // lockHardwareCanvas使用時はリフレッシュレートより早く呼ぶと次の描画まで待たされるので注意
+                        holder.unlockCanvasAndPost(canvas)
+                    }
+                    Log.d("CommentRender", "unlockCanvasAndPost: ${time}ms")
                 }
-                Thread.sleep(5)  // とりあえず回す
+                Thread.sleep(33)  // 30fps=33 | 60fps=16
             }
         }.apply { start() }
 
