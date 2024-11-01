@@ -8,7 +8,6 @@ import android.graphics.Paint
 import android.graphics.PixelFormat
 import android.graphics.PorterDuff
 import android.util.AttributeSet
-import android.util.Log
 import android.view.SurfaceHolder
 import android.view.SurfaceView
 import kotlin.random.Random
@@ -39,8 +38,8 @@ class CommentRender @JvmOverloads constructor(
     private var laneHeight: Float = 0f
     private var maxLanes = 0
 
-    private val globalFontSize = 40f
-    private val spacing = 20f
+    private val globalFontSize = 45f
+    private val spacing = 30f
     private val topPadding = 10f
 
     private val fontMetrics = paint.fontMetrics
@@ -140,6 +139,7 @@ class CommentRender @JvmOverloads constructor(
                                     comment.x -= comment.velocity * (elapsedTime / availableTime)
                                     if (comment.x < -comment.textWidth) {
                                         iterator.remove()
+                                        lanes[comment.lane].remove(comment)
                                         comments.remove(comment)
                                     }
                                 }
@@ -168,7 +168,7 @@ class CommentRender @JvmOverloads constructor(
                 val time = measureTimeMillis {
                     canvas = holder.lockHardwareCanvas()
                 }
-                Log.d("CommentRender", "lockCanvas: ${time}ms")
+//                Log.d("CommentRender", "lockCanvas: ${time}ms")
                 try {
                     drawComments(canvas)
                 } finally {
@@ -176,9 +176,9 @@ class CommentRender @JvmOverloads constructor(
                         // lockHardwareCanvas使用時はリフレッシュレートより早く呼ぶと次の描画まで待たされるので注意
                         holder.unlockCanvasAndPost(canvas)
                     }
-                    Log.d("CommentRender", "unlockCanvasAndPost: ${time}ms")
+//                    Log.d("CommentRender", "unlockCanvasAndPost: ${time}ms")
                 }
-                Thread.sleep(33)  // 30fps=33 | 60fps=16
+                Thread.sleep(16)  // 30fps=33 | 60fps=16
             }
         }.apply { start() }
 

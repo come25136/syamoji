@@ -1,6 +1,7 @@
 package id.come25136.syamoji.nx_jikkyo
 
 import android.util.Log
+import io.reactivex.rxjava3.schedulers.Schedulers
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -12,27 +13,35 @@ interface WebSocketListener {
     fun onMessageReceived(message: JSONObject)
 }
 
-class WebSocketManager(private val url: String, private val listener: WebSocketListener) {
+class WebSocketManager(private val channelId: String, private val listener: WebSocketListener) {
     private val client: OkHttpClient = OkHttpClient.Builder()
         .pingInterval(10, TimeUnit.SECONDS)
         .build()
 
+    private val jkId = getJkIdFromChannelId(channelId)
     private val request: Request = Request.Builder()
-        .url(url)
+        .url("wss://nx-jikkyo.tsukumijima.net/api/v1/channels/${jkId}/ws/comment")
         .build()
 
     private lateinit var webSocket: WebSocket
 
-    init {
-        connect()
-    }
-
-    private fun connect() {
+    fun connect() {
         webSocket = client.newWebSocket(request, object : okhttp3.WebSocketListener() {
             override fun onOpen(webSocket: WebSocket, response: Response) {
                 Log.d("WebSocketManager", "WebSocket opened: ${response.message}")
 
-                sendMessage("[{\"ping\":{\"content\":\"rs:0\"}},{\"ping\":{\"content\":\"ps:0\"}},{\"thread\":{\"version\":\"20061206\",\"thread\":\"4225\",\"threadkey\":\"5035c54c4b5002b5b8eed1fa13e0b42c41a0f52f\",\"user_id\":\"\",\"res_from\":-100}},{\"ping\":{\"content\":\"pf:0\"}},{\"ping\":{\"content\":\"rf:0\"}}]")
+                val jkId = getJkIdFromChannelId(channelId)
+
+                fetchNxXml("https://nx-jikkyo.tsukumijima.net/api/v1/channels/xml").subscribeOn(
+                    Schedulers.io()
+                ).subscribe { nxData ->
+                    val nxChannelInfo =
+                        nxData.channelList//.plus(nxData.bsChannelList)
+                            .find { channel -> channel.video == jkId }
+                            ?: throw Error("No supported channelId")
+
+                    sendMessage("[{\"ping\":{\"content\":\"rs:0\"}},{\"ping\":{\"content\":\"ps:0\"}},{\"thread\":{\"version\":\"20061206\",\"thread\":\"${nxChannelInfo.thread.id}\",\"threadkey\":\"de0f5915bb7dde88051c224566fcdf6eb12c26a6\",\"user_id\":\"\",\"res_from\":-100}},{\"ping\":{\"content\":\"pf:0\"}},{\"ping\":{\"content\":\"rf:0\"}}]")
+                }
             }
 
             override fun onMessage(webSocket: WebSocket, text: String) {
@@ -54,7 +63,7 @@ class WebSocketManager(private val url: String, private val listener: WebSocketL
     }
 
     fun sendMessage(message: String) {
-        Log.d("WebSocketManager","⬆️ $message")
+        Log.d("WebSocketManager", "⬆️ $message")
         webSocket.send(message)
     }
 

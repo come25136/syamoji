@@ -52,12 +52,12 @@ class VideoRenderActivity : AppCompatActivity(), WebSocketListener {
 
         // テスト用に定期的にコメントを追加
 //        commentAdderJob.launch {
-//            while (!commentRender.isInitialized()){
+//            while (!commentRender.isInitialized()) {
 //                delay(100L)
 //            }
 //
 //            while (isActive) {
-//                delay(25L)
+//                delay(100L)
 //                val autoComment = Comment(
 //                    text = "自動コメント ${System.currentTimeMillis()}",
 //                    color = Color.WHITE,
@@ -178,8 +178,10 @@ class VideoRenderActivity : AppCompatActivity(), WebSocketListener {
             MoreExecutors.directExecutor()
         )
 
+        val channelId = intent.getStringExtra("channelId") ?: throw Error("No defined serviceId")
         webSocketManager =
-            WebSocketManager("wss://nx-jikkyo.tsukumijima.net/api/v1/channels/jk9/ws/comment", this)
+            WebSocketManager(channelId, this)
+        webSocketManager.connect()
     }
 
     private fun retryPlayback() {
@@ -211,8 +213,11 @@ class VideoRenderActivity : AppCompatActivity(), WebSocketListener {
             text = message.getJSONObject("chat").getString("content"),
             color = Color.WHITE,
 //                    size = 60f,
-            velocity = 10f
+            velocity = 8f
         )
-        commentRender.addComment(autoComment)
+        Thread {
+            Thread.sleep(5000)
+            commentRender.addComment(autoComment)
+        }.apply { start() }
     }
 }

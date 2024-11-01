@@ -38,7 +38,7 @@ class EpgFragment : ProgramGuideFragment<EpgFragment.Program>() {
         get() = DateTimeFormatter.ofPattern("M月 d日（EEE）").withLocale(DISPLAY_LOCALE)
 
     data class Channel(
-        override val id: String, // Mirakurun内部ではserviceIdとして扱われているもの
+        override val id: String, // Mirakurun内部ではnetworkId + serviceIdとして扱われているもの
         val group: String, // GR, BS, CS
         override val name: Spanned,
         override val logoUrl: String?, // チャンネルロゴ
@@ -65,6 +65,7 @@ class EpgFragment : ProgramGuideFragment<EpgFragment.Program>() {
         if (programGuideSchedule.isCurrentProgram) {
             val intent = Intent(activity, VideoRenderActivity::class.java)
             intent.putExtra("streamUrl", streamUrl)
+            intent.putExtra("channelId", innerSchedule.channel.id)
             startActivity(intent)
         } else {
             // 番組詳細ページを開く場合の処理
