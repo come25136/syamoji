@@ -6,11 +6,13 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.PixelFormat
-import android.graphics.PorterDuff
+import android.opengl.GLES20
+import android.opengl.GLSurfaceView
+import android.opengl.GLUtils
 import android.util.AttributeSet
 import android.util.Log
-import android.view.SurfaceHolder
-import android.view.SurfaceView
+import javax.microedition.khronos.egl.EGLConfig
+import javax.microedition.khronos.opengles.GL10
 import kotlin.random.Random
 import kotlin.system.measureTimeMillis
 
@@ -27,172 +29,177 @@ data class Comment(
 
 class CommentRender @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null
-) : SurfaceView(context, attrs), SurfaceHolder.Callback {
+) : GLSurfaceView(context, attrs) {
 
-    private val comments = mutableListOf<Comment>()
-    private val paint = Paint().apply {
-        isAntiAlias = true
-    }
-    private var drawThread: Thread? = null
-    private var drawing = false
-    private val lanes = mutableListOf<MutableList<Comment>>()
-    private var laneHeight: Float = 0f
-    private var maxLanes = 0
-
-    private val globalFontSize = 40f
-    private val spacing = 20f
-    private val topPadding = 10f
-
-    private val fontMetrics = paint.fontMetrics
-    private val ascent = fontMetrics.ascent
-    private val descent = fontMetrics.descent
-    private val totalFontHeight = (-ascent) + descent
-
-    private var lastTime = System.currentTimeMillis()
+    private val renderer = CommentRenderer(context)
+    private var initialized = false  // 初期化フラグ
 
     init {
-        paint.textSize = globalFontSize
-        holder.addCallback(this)
+        setEGLContextClientVersion(2) // OpenGL ES 2.0を使用
+        setEGLConfigChooser(8, 8, 8, 8, 16, 0)
         holder.setFormat(PixelFormat.TRANSLUCENT)
-//        setZOrderOnTop(true)
-    }
+        setZOrderOnTop(true)
 
-    private fun calculateLaneHeight(): Float {
-        return totalFontHeight + spacing
+        setRenderer(renderer)
+        renderMode = RENDERMODE_CONTINUOUSLY
     }
 
     fun addComment(comment: Comment) {
-        Thread {
-            comment.textWidth = paint.measureText(comment.text)
-            paint.color = comment.color
-            val textBitmap = createTextBitmap(comment.text, paint)
-            comment.bitmap = textBitmap
-            comment.x = width.toFloat()
-
-            val availableLaneIndex = lanes.indices.find { lane ->
-                val lastCommentInLane = lanes[lane].lastOrNull()
-                lastCommentInLane == null || (lastCommentInLane.x + lastCommentInLane.textWidth + spacing) < width.toFloat()
-            }
-
-            if (availableLaneIndex != null) {
-                comment.lane = availableLaneIndex
-                comment.y = topPadding + (availableLaneIndex * laneHeight) + (-ascent)
-                lanes[availableLaneIndex].add(comment)
-            } else {
-                val randomLane = Random.nextInt(0, maxLanes)
-                comment.lane = randomLane
-                comment.y = topPadding + (randomLane * laneHeight) + (-ascent)
-                synchronized(lanes[randomLane]) {
-                    lanes[randomLane].add(comment)
-                }
-            }
-
-            synchronized(comments) {
-                comments.add(comment)
-                if (comments.size > 300) {
-                    removeOldestComment()
-                }
-            }
-        }.start()
+        renderer.addComment(comment)
     }
 
-    private fun createTextBitmap(text: String, paint: Paint): Bitmap {
-        val width = paint.measureText(text).toInt()
-        val height = (paint.descent() - paint.ascent()).toInt()
-        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(bitmap)
-        canvas.drawText(text, 0f, -paint.ascent(), paint)
-        return bitmap
+    fun isInitialized(): Boolean {
+        return initialized
     }
 
-    private fun removeOldestComment() {
-        if (comments.isNotEmpty()) {
-            val oldestComment = comments.removeAt(0)
-            lanes[oldestComment.lane].remove(oldestComment)
+    private inner class CommentRenderer(private val context: Context) : Renderer {
+        private val comments = mutableListOf<Comment>()
+        private val paint = Paint().apply {
+            isAntiAlias = true
+            textSize = 40f // フォントサイズの設定
         }
-    }
 
-    private fun drawComments(canvas: Canvas?) {
-        if (canvas == null) return
+        private var lastTime = System.currentTimeMillis()
+        private val spacing = 20f
+        private var laneHeight: Float = 0f
+        private var maxLanes = 0
 
-        val fps = 60
-        val availableTime = 1000 / fps
-        val elapsedTime = System.currentTimeMillis() - lastTime
-        if (elapsedTime < availableTime) {
-//            Thread.sleep(availableTime - elapsedTime)
+        override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
+            GLES20.glClearColor(0f, 0f, 0f, 0f)
+            GLES20.glEnable(GLES20.GL_BLEND)
+            GLES20.glBlendFunc(GLES20.GL_SRC_ALPHA, GLES20.GL_ONE_MINUS_SRC_ALPHA)
+            initialized = true  // surfaceCreatedが呼ばれたタイミングで初期化フラグをtrueにする
         }
-        lastTime = System.currentTimeMillis()
 
-        canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR)
+        override fun onSurfaceChanged(gl: GL10?, width: Int, height: Int) {
+            GLES20.glViewport(0, 0, width, height)
+            laneHeight = paint.textSize + spacing
+            maxLanes = (height / laneHeight).toInt().coerceAtLeast(1)
+        }
 
-        val time = measureTimeMillis {
-            synchronized(comments) {
-                for (lane in lanes) {
-                    synchronized(lane) {
-                        val iterator = lane.iterator()
-                        synchronized(iterator) {
-                            while (iterator.hasNext()) {
-                                val comment = iterator.next()
-                                synchronized(comment) {
-                                    comment.bitmap?.let {
-                                        canvas.drawBitmap(it, comment.x, comment.y, null)
-                                    }
-                                    comment.x -= comment.velocity * (elapsedTime / availableTime)
-                                    if (comment.x < -comment.textWidth) {
-                                        iterator.remove()
-                                        comments.remove(comment)
-                                    }
+        override fun onDrawFrame(gl: GL10?) {
+            GLES20.glClearColor(0.0f, 0.0f, 0.0f, 0.0f) // 透明な背景
+            GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT or GLES20.GL_DEPTH_BUFFER_BIT)
+
+            val elapsedTime = System.currentTimeMillis() - lastTime
+            val availableTime = 16  // 60fpsに相当
+            if (elapsedTime < availableTime) {
+                Thread.sleep((availableTime - elapsedTime).toLong())
+            }
+            lastTime = System.currentTimeMillis()
+
+            val time = measureTimeMillis {
+                try {
+                    synchronized(comments) {
+                        for (comment in comments) {
+                            synchronized(comment) {
+                                comment.bitmap?.let {
+                                    drawBitmap(it, comment.x, comment.y)
+                                }
+                                comment.x -= comment.velocity * (elapsedTime / availableTime)
+                                if (comment.x < -comment.textWidth) {
+                                    comment.bitmap?.recycle() // メモリ解放のためBitmapをリサイクル
+                                    comments.remove(comment)
                                 }
                             }
                         }
                     }
+                } catch (e: Exception) {
+                }
+            }
+            Log.d("CommentRender", "drawComments: ${time}ms")
+
+            Thread.sleep(100)
+        }
+
+        fun addComment(comment: Comment) {
+            comment.bitmap = createTextBitmap(comment.text, paint, comment.color)
+            comment.x = 1.0f // 初期のX位置（画面右端から左へ流れる）
+            comment.y = Random.nextInt(0, maxLanes) * laneHeight
+            synchronized(comments) {
+                comments.add(comment)
+            }
+        }
+
+        private fun createTextBitmap(text: String, paint: Paint, color: Int): Bitmap {
+            paint.color = color // コメントの色を設定
+            val width = paint.measureText(text).toInt()
+            val height = (paint.descent() - paint.ascent()).toInt()
+            val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+            val canvas = Canvas(bitmap)
+            canvas.drawText(text, 0f, -paint.ascent(), paint) // ビットマップにテキストを描画
+            return bitmap
+        }
+
+
+        private fun drawBitmap(bitmap: Bitmap, x: Float, y: Float) {
+            val textureId = loadTexture(bitmap)
+            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textureId)
+
+            val vertices = floatArrayOf(
+                x, y, 0.0f,               // 左上
+                x + bitmap.width, y, 0.0f, // 右上
+                x, y + bitmap.height, 0.0f, // 左下
+                x + bitmap.width, y + bitmap.height, 0.0f // 右下
+            )
+
+            val vertexBuffer = createFloatBuffer(vertices)
+            GLES20.glVertexAttribPointer(0, 3, GLES20.GL_FLOAT, false, 0, vertexBuffer)
+            GLES20.glEnableVertexAttribArray(0)
+
+            val textureCoordinates = floatArrayOf(
+                0.0f, 0.0f,
+                1.0f, 0.0f,
+                0.0f, 1.0f,
+                1.0f, 1.0f
+            )
+            val textureBuffer = createFloatBuffer(textureCoordinates)
+            GLES20.glVertexAttribPointer(1, 2, GLES20.GL_FLOAT, false, 0, textureBuffer)
+            GLES20.glEnableVertexAttribArray(1)
+
+            GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4)
+            GLES20.glDeleteTextures(1, intArrayOf(textureId), 0)
+        }
+
+        private fun loadTexture(bitmap: Bitmap): Int {
+            val texture = IntArray(1)
+            GLES20.glGenTextures(1, texture, 0)
+            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, texture[0])
+
+            GLES20.glTexParameterf(
+                GLES20.GL_TEXTURE_2D,
+                GLES20.GL_TEXTURE_MIN_FILTER,
+                GLES20.GL_LINEAR.toFloat()
+            )
+            GLES20.glTexParameterf(
+                GLES20.GL_TEXTURE_2D,
+                GLES20.GL_TEXTURE_MAG_FILTER,
+                GLES20.GL_LINEAR.toFloat()
+            )
+            GLES20.glTexParameteri(
+                GLES20.GL_TEXTURE_2D,
+                GLES20.GL_TEXTURE_WRAP_S,
+                GLES20.GL_CLAMP_TO_EDGE
+            )
+            GLES20.glTexParameteri(
+                GLES20.GL_TEXTURE_2D,
+                GLES20.GL_TEXTURE_WRAP_T,
+                GLES20.GL_CLAMP_TO_EDGE
+            )
+
+            GLUtils.texImage2D(GLES20.GL_TEXTURE_2D, 0, bitmap, 0)
+
+            return texture[0]
+        }
+
+        private fun createFloatBuffer(data: FloatArray): java.nio.FloatBuffer {
+            return java.nio.ByteBuffer.allocateDirect(data.size * 4).run {
+                order(java.nio.ByteOrder.nativeOrder())
+                asFloatBuffer().apply {
+                    put(data)
+                    position(0)
                 }
             }
         }
-//        Log.d("CommentRender", "drawComments: ${time}ms")
-    }
-
-    private var _initialized = false
-    override fun surfaceCreated(holder: SurfaceHolder) {
-        laneHeight = calculateLaneHeight()
-        maxLanes = (height / laneHeight).toInt().coerceAtLeast(1)
-        lanes.clear()
-        for (i in 0 until maxLanes) {
-            lanes.add(mutableListOf())
-        }
-
-        drawing = true
-        drawThread = Thread {
-            while (drawing) {
-                val canvas: Canvas
-                val time = measureTimeMillis {
-                    canvas = holder.lockHardwareCanvas()
-                }
-                Log.d("CommentRender", "lockCanvas: ${time}ms")
-                try {
-                    drawComments(canvas)
-                } finally {
-                    val time = measureTimeMillis {
-                        // lockHardwareCanvas使用時はリフレッシュレートより早く呼ぶと次の描画まで待たされるので注意
-                        holder.unlockCanvasAndPost(canvas)
-                    }
-                    Log.d("CommentRender", "unlockCanvasAndPost: ${time}ms")
-                }
-                Thread.sleep(33)  // 30fps=33 | 60fps=16
-            }
-        }.apply { start() }
-
-        _initialized = true
-    }
-
-    fun isInitialized(): Boolean {
-        return _initialized
-    }
-
-    override fun surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) {}
-
-    override fun surfaceDestroyed(holder: SurfaceHolder) {
-        drawing = false
-        drawThread?.join()  // スレッド終了待ち
     }
 }

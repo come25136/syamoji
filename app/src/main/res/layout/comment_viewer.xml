@@ -2,7 +2,7 @@
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
-    <id.come25136.syamoji.CommentRender
+    <id.come25136.syamoji.OpenGLCommentRender
         android:id="@+id/commentRender"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />

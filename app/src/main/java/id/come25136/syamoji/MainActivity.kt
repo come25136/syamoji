@@ -1,5 +1,6 @@
 package id.come25136.syamoji
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.enableEdgeToEdge
 import androidx.annotation.OptIn
@@ -29,8 +30,15 @@ class MainActivity : AppCompatActivity() {
 
         }
 
-        supportFragmentManager.beginTransaction()
-            .replace(R.id.fragment_container, EpgFragment())
-            .commit()
+//        val intent = Intent(applicationContext, VideoRenderActivity::class.java)
+//        intent.putExtra("streamUrl", "http://192.168.20.10:40772/api/channels/GR/16/services/23608/stream/")
+//        startActivity(intent)
+
+        val intent = Intent(applicationContext, CommentActivity::class.java)
+        startActivity(intent)
+
+//        supportFragmentManager.beginTransaction()
+//            .replace(R.id.fragment_container, EpgFragment())
+//            .commit()
     }
 }
