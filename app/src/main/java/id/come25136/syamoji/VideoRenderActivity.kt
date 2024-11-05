@@ -147,12 +147,11 @@ class VideoRenderActivity : AppCompatActivity(), WebSocketListener {
 
                                 val now = System.currentTimeMillis()
 //                                if (lastRetryDatetime + 1000 * 2 < now) {
-                                // Coroutineを使って非同期で5秒の遅延を実行
                                 CoroutineScope(Dispatchers.Main).launch {
                                     if (!(mediaController.isLoading || mediaController.isPlaying)) {
                                         Log.d("ExoPlayer", "リトライを開始します")
 
-                                        delay(1000L) // 5秒遅延
+                                        delay(100)
                                         retryPlayback()
                                     }
                                 }
