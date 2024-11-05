@@ -215,9 +215,9 @@ class VideoRenderActivity : AppCompatActivity(), WebSocketListener {
 //                    size = 60f,
             velocity = 8f
         )
-        Thread {
-            Thread.sleep(5000)
+        CoroutineScope(Dispatchers.Default).launch {
+            delay(100)
             commentRender.addComment(autoComment)
-        }.apply { start() }
+        }
     }
 }
