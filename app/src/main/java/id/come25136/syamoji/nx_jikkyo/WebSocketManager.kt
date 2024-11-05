@@ -36,9 +36,9 @@ class WebSocketManager(private val channelId: String, private val listener: WebS
                     Schedulers.io()
                 ).subscribe { nxData ->
                     val nxChannelInfo =
-                        nxData.channelList//.plus(nxData.bsChannelList)
+                        (nxData.channelList + nxData.bsChannelList)
                             .find { channel -> channel.video == jkId }
-                            ?: throw Error("No supported channelId")
+                            ?: throw Error("No supported channelId. channelId:${channelId}")
 
                     sendMessage("[{\"ping\":{\"content\":\"rs:0\"}},{\"ping\":{\"content\":\"ps:0\"}},{\"thread\":{\"version\":\"20061206\",\"thread\":\"${nxChannelInfo.thread.id}\",\"threadkey\":\"de0f5915bb7dde88051c224566fcdf6eb12c26a6\",\"user_id\":\"\",\"res_from\":-100}},{\"ping\":{\"content\":\"pf:0\"}},{\"ping\":{\"content\":\"rf:0\"}}]")
                 }

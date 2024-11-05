@@ -12,6 +12,10 @@ import org.simpleframework.xml.Root
 import org.simpleframework.xml.core.Persister
 import java.io.IOException
 
+interface BaseChannel {
+    var video: String
+    var thread: Thread
+}
 
 @Root(name = "channels", strict = false)
 data class Channels(
@@ -34,11 +38,11 @@ data class Channel(
     var name: String = "",
 
     @field:Element(name = "video")
-    var video: String = "",
+    override var video: String = "",
 
     @field:Element(name = "thread")
-    var thread: Thread = Thread()
-)
+    override var thread: Thread = Thread()
+) : BaseChannel
 
 @Root(name = "bs_channel", strict = false)
 data class BsChannel(
@@ -49,11 +53,11 @@ data class BsChannel(
     var name: String = "",
 
     @field:Element(name = "video")
-    var video: String = "",
+    override var video: String = "",
 
     @field:Element(name = "thread")
-    var thread: Thread = Thread()
-)
+    override var thread: Thread = Thread()
+) : BaseChannel
 
 @Root(name = "thread", strict = false)
 data class Thread(
