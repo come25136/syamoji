@@ -7,6 +7,7 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.PixelFormat
 import android.graphics.PorterDuff
+import android.graphics.Typeface
 import android.util.AttributeSet
 import android.view.SurfaceHolder
 import android.view.SurfaceView
@@ -31,6 +32,10 @@ class CommentRender @JvmOverloads constructor(
     private val comments = mutableListOf<Comment>()
     private val paint = Paint().apply {
         isAntiAlias = true
+        typeface = Typeface.DEFAULT_BOLD
+    }
+    private val copyPaint = Paint().apply {
+        color = Color.argb((255 * 0.9).toInt(), 255, 255, 255)
     }
     private var drawThread: Thread? = null
     private var drawing = false
@@ -125,23 +130,21 @@ class CommentRender @JvmOverloads constructor(
         canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR)
 
         val time = measureTimeMillis {
-            synchronized(comments) {
+            synchronized(lanes) {
                 for (lane in lanes) {
-                    synchronized(lane) {
-                        val iterator = lane.iterator()
-                        synchronized(iterator) {
+                    synchronized(comments) {
+                        synchronized(lane) {
+                            val iterator = lane.iterator()
                             while (iterator.hasNext()) {
                                 val comment = iterator.next()
-                                synchronized(comment) {
-                                    comment.bitmap?.let {
-                                        canvas.drawBitmap(it, comment.x, comment.y, null)
-                                    }
-                                    comment.x -= comment.velocity * (elapsedTime / availableTime)
-                                    if (comment.x < -comment.textWidth) {
-                                        iterator.remove()
-                                        lanes[comment.lane].remove(comment)
-                                        comments.remove(comment)
-                                    }
+                                comment.bitmap?.let {
+                                    canvas.drawBitmap(it, comment.x, comment.y, copyPaint)
+                                }
+                                comment.x -= comment.velocity * (elapsedTime / availableTime)
+                                if (comment.x < -comment.textWidth) {
+                                    iterator.remove()
+                                    lanes[comment.lane].remove(comment)
+                                    comments.remove(comment)
                                 }
                             }
                         }
