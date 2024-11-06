@@ -5,6 +5,7 @@ import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
+import android.view.WindowManager
 import android.widget.ProgressBar
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
@@ -50,23 +51,6 @@ class VideoRenderActivity : AppCompatActivity(), WebSocketListener {
 
         commentRender = findViewById(R.id.commentRender)
 
-        // テスト用に定期的にコメントを追加
-//        commentAdderJob.launch {
-//            while (!commentRender.isInitialized()) {
-//                delay(100L)
-//            }
-//
-//            while (isActive) {
-//                delay(100L)
-//                val autoComment = Comment(
-//                    text = "自動コメント ${System.currentTimeMillis()}",
-//                    color = Color.WHITE,
-////                    size = 60f,
-//                    velocity = 10f
-//                )
-//                commentRender.addComment(autoComment)
-//            }
-//        }
 
         streamUrl = intent.getStringExtra("streamUrl")!!
 
@@ -75,8 +59,6 @@ class VideoRenderActivity : AppCompatActivity(), WebSocketListener {
         playerView = findViewById(R.id.player_view)
         spinner = findViewById(R.id.progressBar)
 
-        // ExoPlayerの初期化
-//        player = ExoPlayer.Builder(this).setLoadControl(loadControl).build()
 
         val component = ComponentName(this, PlaybackService::class.java)
         val token = SessionToken(this, component)
@@ -85,10 +67,6 @@ class VideoRenderActivity : AppCompatActivity(), WebSocketListener {
         controllerFuture.addListener(
             {
                 mediaController = controllerFuture.get()
-
-                // Call controllerFuture.get() to retrieve the MediaController.
-                // MediaController implements the Player interface, so it can be
-                // attached to the PlayerView UI component.
                 playerView.player = mediaController
 
                 val mediaItem = MediaItem
@@ -98,25 +76,8 @@ class VideoRenderActivity : AppCompatActivity(), WebSocketListener {
                             .setMediaUri(Uri.parse(intent.getStringExtra("streamUrl")!!))
                             .build()
                     ).build()
-//                val mediaItem = MediaItem.fromUri(intent.getStringExtra("streamUrl")!!)
 
                 mediaController.setMediaItem(mediaItem)
-
-                //                playerView.player = player
-
-                // メディアアイテムを設定
-                // val mediaItem = MediaItem.fromUri("http://distribution.bbb3d.renderfarming.net/video/mp4/bbb_sunflower_1080p_60fps_normal.mp4")
-//        val mediaItem = MediaItem.fromUri("http://192.168.20.10:40772/api/channels/GR/23/services/1072/stream") // テレ東
-//        val mediaItem = MediaItem.fromUri("http://192.168.20.10:40772/api/channels/GR/21/services/1056/stream") // フジテレビ
-//        val mediaItem = MediaItem.fromUri("http://192.168.20.10:40772/api/channels/GR/16/services/23608/stream") // TOKYO MX1
-//        val mediaItem = MediaItem.fromUri("http://192.168.20.10:40772/api/channels/BS/BS09_0/services/211/stream") // BS11
-//                val url = intent.getStringExtra("streamUrl")!!
-//                Log.d("ExoPlayer", "Generated stream url: $url")
-//                val mediaItem2 =
-//                    MediaItem.fromUri(url)
-//                player.setMediaItem(mediaItem2)
-
-                var lastRetryDatetime = System.currentTimeMillis()
 
                 // リスナーの追加
                 mediaController.addListener(object : Player.Listener {
@@ -145,8 +106,6 @@ class VideoRenderActivity : AppCompatActivity(), WebSocketListener {
                             Player.STATE_IDLE -> {
                                 Log.d("ExoPlayer", "プレイヤーがアイドル状態")
 
-                                val now = System.currentTimeMillis()
-//                                if (lastRetryDatetime + 1000 * 2 < now) {
                                 CoroutineScope(Dispatchers.Main).launch {
                                     if (!(mediaController.isLoading || mediaController.isPlaying)) {
                                         Log.d("ExoPlayer", "リトライを開始します")
@@ -155,7 +114,6 @@ class VideoRenderActivity : AppCompatActivity(), WebSocketListener {
                                         retryPlayback()
                                     }
                                 }
-//                                }
                             }
                         }
                     }
@@ -181,6 +139,8 @@ class VideoRenderActivity : AppCompatActivity(), WebSocketListener {
         webSocketManager =
             WebSocketManager(channelId, this)
         webSocketManager.connect()
+
+        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
     }
 
     private fun retryPlayback() {
@@ -196,6 +156,8 @@ class VideoRenderActivity : AppCompatActivity(), WebSocketListener {
         commentAdderJob.cancel()
 
         webSocketManager.close()
+
+        window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
     }
 
     // WebSocketListenerの実装
@@ -211,7 +173,6 @@ class VideoRenderActivity : AppCompatActivity(), WebSocketListener {
         val autoComment = Comment(
             text = message.getJSONObject("chat").getString("content"),
             color = Color.WHITE,
-//                    size = 60f,
             velocity = 8f
         )
         CoroutineScope(Dispatchers.Default).launch {
