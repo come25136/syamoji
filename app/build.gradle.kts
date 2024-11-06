@@ -63,4 +63,6 @@ dependencies {
 
     implementation(libs.m3u.parser)
     implementation(libs.androidx.media3.session)
+
+    implementation(libs.libvlc.all)
 }
