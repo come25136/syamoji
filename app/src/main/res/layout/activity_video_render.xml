@@ -7,17 +7,21 @@
     android:layout_height="match_parent"
     tools:context=".VideoRenderActivity">
 
-    <org.videolan.libvlc.util.VLCVideoLayout
+    <androidx.media3.ui.PlayerView
         android:id="@+id/player_view"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:layout_centerInParent="true"
+        app:resize_mode="fit"
+        app:use_controller="false">
+
         <id.come25136.syamoji.CommentRender
             android:id="@+id/commentRender"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
-    </org.videolan.libvlc.util.VLCVideoLayout>
+    </androidx.media3.ui.PlayerView>
 
     <ProgressBar
         android:id="@+id/progressBar"

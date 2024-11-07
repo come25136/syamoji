@@ -1,5 +1,6 @@
 package id.come25136.syamoji
 
+import android.content.ComponentName
 import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
@@ -9,6 +10,14 @@ import android.widget.ProgressBar
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
+import androidx.media3.common.MediaItem
+import androidx.media3.common.PlaybackException
+import androidx.media3.common.Player
+import androidx.media3.common.util.UnstableApi
+import androidx.media3.session.MediaController
+import androidx.media3.session.SessionToken
+import androidx.media3.ui.PlayerView
+import com.google.common.util.concurrent.MoreExecutors
 import id.come25136.syamoji.nx_jikkyo.WebSocketListener
 import id.come25136.syamoji.nx_jikkyo.WebSocketManager
 import kotlinx.coroutines.CoroutineScope
@@ -18,117 +27,136 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.json.JSONObject
-import org.videolan.libvlc.LibVLC
-import org.videolan.libvlc.Media
-import org.videolan.libvlc.MediaPlayer
-import org.videolan.libvlc.util.VLCVideoLayout
 
+@UnstableApi
 class VideoRenderActivity : AppCompatActivity(), WebSocketListener {
-    private lateinit var playerView: VLCVideoLayout
+    private lateinit var playerView: PlayerView
     private lateinit var spinner: ProgressBar
     private lateinit var streamUrl: String
+    private lateinit var mediaController: MediaController
     private lateinit var webSocketManager: WebSocketManager
-    private lateinit var commentRender: CommentRender
 
-    private lateinit var libVLC: LibVLC
-    private lateinit var mediaPlayer: MediaPlayer
+    private lateinit var commentRender: CommentRender
     private val commentAdderJob = CoroutineScope(Dispatchers.Default + Job())
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_video_render)
+//        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
+//            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+//            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
+//            insets
+//        }
 
         commentRender = findViewById(R.id.commentRender)
+
+
+        streamUrl = intent.getStringExtra("streamUrl")!!
+
+
+
         playerView = findViewById(R.id.player_view)
         spinner = findViewById(R.id.progressBar)
 
-        // URLの取得
-        streamUrl = intent.getStringExtra("streamUrl")!!
 
-        // VLCのインスタンスを作成
-        libVLC = LibVLC(this)
-        mediaPlayer = MediaPlayer(libVLC)
+        val component = ComponentName(this, PlaybackService::class.java)
+        val token = SessionToken(this, component)
 
-        // SurfaceViewに関連付け
-        mediaPlayer.attachViews(playerView, null, false, false)
+        val controllerFuture = MediaController.Builder(this, token).buildAsync()
+        controllerFuture.addListener(
+            {
+                mediaController = controllerFuture.get()
+                playerView.player = mediaController
 
-        // メディアの設定
-        prepareMediaPlayer()
+                val mediaItem = MediaItem
+                    .Builder()
+                    .setRequestMetadata(
+                        MediaItem.RequestMetadata.Builder()
+                            .setMediaUri(Uri.parse(intent.getStringExtra("streamUrl")!!))
+                            .build()
+                    ).build()
 
-        // WebSocket接続のセットアップ
+                mediaController.setMediaItem(mediaItem)
+
+                // リスナーの追加
+                mediaController.addListener(object : Player.Listener {
+                    override fun onPlaybackStateChanged(state: Int) {
+                        when (state) {
+                            Player.STATE_BUFFERING -> {
+                                Log.d("ExoPlayer", "バッファリング中...")
+                                // バッファリング中のUI表示などをここに追加
+                                spinner.isVisible = true
+                            }
+
+                            Player.STATE_READY -> {
+                                Log.d("ExoPlayer", "再生準備完了")
+                                spinner.isVisible = false
+                                // 再生が準備完了したら自動再生を開始
+                                if (!mediaController.isPlaying) {
+                                    mediaController.play()
+                                }
+                            }
+
+                            Player.STATE_ENDED -> {
+                                Log.d("ExoPlayer", "再生終了")
+                                // 再生終了後の処理をここに追加
+                            }
+
+                            Player.STATE_IDLE -> {
+                                Log.d("ExoPlayer", "プレイヤーがアイドル状態")
+
+                                CoroutineScope(Dispatchers.Main).launch {
+                                    if (!(mediaController.isLoading || mediaController.isPlaying)) {
+                                        Log.d("ExoPlayer", "リトライを開始します")
+
+                                        delay(100)
+                                        retryPlayback()
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    override fun onPlayerError(error: PlaybackException) {
+                        Log.e("ExoPlayer", "エラー: ${error.message} コード： ${error.errorCode}")
+                        if (error.errorCode == PlaybackException.ERROR_CODE_IO_UNSPECIFIED) {
+                            Log.d("ExoPlayer", "ソースエラー発生。再試行します。")
+                            retryPlayback()
+                        } else {
+                            // 他のタイプのエラー処理をここに追加
+                        }
+                    }
+                })
+
+                // プレイヤーを準備
+                retryPlayback()
+            },
+            MoreExecutors.directExecutor()
+        )
+
         val channelId = intent.getStringExtra("channelId") ?: throw Error("No defined serviceId")
-        webSocketManager = WebSocketManager(channelId, this)
+        webSocketManager =
+            WebSocketManager(channelId, this)
         webSocketManager.connect()
 
-        // スクリーンをオンに保持
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
     }
 
-    private fun prepareMediaPlayer() {
-        // メディアの設定
-        val media = Media(libVLC, Uri.parse(streamUrl))
-        mediaPlayer.media = media
-        media.release()  // メディアをセットした後にリリース
-
-        // リスナーの設定
-        mediaPlayer.setEventListener { event ->
-//            Log.d("libVLC","Event: ${event.type.toString(16)}")
-            when (event.type) {
-                MediaPlayer.Event.Opening -> {
-                    Log.d("libVLC", "オープン中...")
-                    spinner.isVisible = true
-                }
-
-                MediaPlayer.Event.Buffering -> {
-                    mediaPlayer.isPlaying
-                    Log.d("libVLC", "バッファリング中...")
-                    spinner.isVisible = true
-                }
-
-                MediaPlayer.Event.Vout -> {
-                    Log.d("libVLC", "再生中")
-                    spinner.isVisible = false
-                }
-
-                MediaPlayer.Event.Stopped -> {
-                    Log.d("libVLC", "再生停止")
-                }
-
-                MediaPlayer.Event.EndReached -> {
-                    Log.d("libVLC", "再生終了")
-                    retryPlayback()
-                }
-
-                MediaPlayer.Event.EncounteredError -> {
-                    Log.e("libVLC", "再生エラーが発生")
-                    retryPlayback()
-                }
-            }
-        }
-
-        // 再生の準備と開始
-        retryPlayback()
-    }
-
     private fun retryPlayback() {
-        Log.d("libVLC", "再試行: プレイヤーを再準備します。")
-        mediaPlayer.play()
+        Log.d("ExoPlayer", "再試行: プレイヤーを再準備します。")
+        mediaController.prepare()
     }
 
     override fun onDestroy() {
         super.onDestroy()
 
-        // メディアプレイヤーとLibVLCのリソースを解放
-        mediaPlayer.stop()
-        mediaPlayer.detachViews()
-        mediaPlayer.release()
-        libVLC.release()
+        mediaController.release()
 
         commentAdderJob.cancel()
+
         webSocketManager.close()
 
-        // スクリーンオン設定解除
         window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
     }
 

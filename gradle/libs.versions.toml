@@ -7,7 +7,6 @@ kotlin = "1.9.0"
 coreKtx = "1.13.1"
 appcompat = "1.6.1"
 leanback = "1.0.0"
-libvlcAll = "3.4.3"
 m3uParser = "1.4.0"
 material = "1.10.0"
 activity = "1.8.0"
@@ -34,7 +33,6 @@ androidx-leanback = { module = "androidx.leanback:leanback", version.ref = "lean
 converter-gson = { module = "com.squareup.retrofit2:converter-gson", version.ref = "retrofit" }
 danmakuflamemaster = { module = "com.github.Bilibili:DanmakuFlameMaster", version.ref = "danmakuflamemaster" }
 exoplayer = { module = "com.google.android.exoplayer:exoplayer", version.ref = "exoplayer" }
-libvlc-all = { module = "org.videolan.android:libvlc-all", version.ref = "libvlcAll" }
 m3u-parser = { module = "com.github.bjoernpetersen:m3u-parser", version.ref = "m3uParser" }
 material = { group = "com.google.android.material", name = "material", version.ref = "material" }
 androidx-activity = { group = "androidx.activity", name = "activity", version.ref = "activity" }
