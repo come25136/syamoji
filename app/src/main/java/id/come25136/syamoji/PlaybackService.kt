@@ -20,10 +20,10 @@ class PlaybackService : MediaSessionService() {
         super.onCreate()
 
         val loadControl: LoadControl = DefaultLoadControl.Builder().setBufferDurationsMs(
-            100, // 最小バッファサイズ（ミリ秒）
+            50, // 最小バッファサイズ（ミリ秒）
             200, // 最大バッファサイズ（ミリ秒）
-            100, // 再生のためのバッファサイズ（ミリ秒）
-            100 // 再バッファリング後の再生のためのバッファサイズ
+            50, // 再生のためのバッファサイズ（ミリ秒）
+            50 // 再バッファリング後の再生のためのバッファサイズ
         ).build()
         player = ExoPlayer.Builder(this).setLoadControl(loadControl).build()
 

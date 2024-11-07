@@ -107,12 +107,12 @@ class VideoRenderActivity : AppCompatActivity(), WebSocketListener {
                                 Log.d("ExoPlayer", "プレイヤーがアイドル状態")
 
                                 CoroutineScope(Dispatchers.Main).launch {
-                                    if (!(mediaController.isLoading || mediaController.isPlaying)) {
-                                        Log.d("ExoPlayer", "リトライを開始します")
+//                                    if (!(mediaController.isLoading || mediaController.isPlaying)) {
+                                    Log.d("ExoPlayer", "リトライを開始します")
 
-                                        delay(100)
-                                        retryPlayback()
-                                    }
+                                    delay(100)
+                                    mediaController.play()
+//                                    }
                                 }
                             }
                         }
@@ -122,8 +122,10 @@ class VideoRenderActivity : AppCompatActivity(), WebSocketListener {
                         Log.e("ExoPlayer", "エラー: ${error.message} コード： ${error.errorCode}")
                         if (error.errorCode == PlaybackException.ERROR_CODE_IO_UNSPECIFIED) {
                             Log.d("ExoPlayer", "ソースエラー発生。再試行します。")
-                            retryPlayback()
+                            mediaController.play()
+//                            retryPlayback()
                         } else {
+                            Log.d("ExoPlayer", "不明なエラー発生。")
                             // 他のタイプのエラー処理をここに追加
                         }
                     }
