@@ -11,6 +11,8 @@ import android.graphics.Typeface
 import android.util.AttributeSet
 import android.view.SurfaceHolder
 import android.view.SurfaceView
+import java.util.concurrent.ConcurrentLinkedQueue
+import kotlin.math.min
 import kotlin.random.Random
 import kotlin.system.measureTimeMillis
 
@@ -20,8 +22,8 @@ data class Comment(
     var x: Float = 0f,
     var y: Float = 0f,
     var velocity: Float = 2.5f,
-    var lane: Int = 0,
-    var textWidth: Float = 0f,
+    var lane: Int = 0, // 上から0インデックス
+    var width: Float = 0f,
     var bitmap: Bitmap? = null
 )
 
@@ -39,7 +41,6 @@ class CommentRender @JvmOverloads constructor(
     }
     private var drawThread: Thread? = null
     private var drawing = false
-    private val lanes = mutableListOf<MutableList<Comment>>()
     private var laneHeight: Float = 0f
     private var maxLanes = 0
 
@@ -54,6 +55,9 @@ class CommentRender @JvmOverloads constructor(
 
     private var lastTime = System.currentTimeMillis()
 
+    private val commentQueue = ConcurrentLinkedQueue<Comment>()
+    private val lastComments = arrayListOf<Comment>();
+
     init {
         paint.textSize = globalFontSize
         holder.addCallback(this)
@@ -67,36 +71,13 @@ class CommentRender @JvmOverloads constructor(
 
     fun addComment(comment: Comment) {
         Thread {
-            comment.textWidth = paint.measureText(comment.text)
+            comment.width = paint.measureText(comment.text)
             paint.color = comment.color
             val textBitmap = createTextBitmap(comment.text, paint)
             comment.bitmap = textBitmap
             comment.x = width.toFloat()
 
-            val availableLaneIndex = lanes.indices.find { lane ->
-                val lastCommentInLane = lanes[lane].lastOrNull()
-                lastCommentInLane == null || (lastCommentInLane.x + lastCommentInLane.textWidth + spacing) < width.toFloat()
-            }
-
-            if (availableLaneIndex != null) {
-                comment.lane = availableLaneIndex
-                comment.y = topPadding + (availableLaneIndex * laneHeight) + (-ascent)
-                lanes[availableLaneIndex].add(comment)
-            } else {
-                val randomLane = Random.nextInt(0, maxLanes)
-                comment.lane = randomLane
-                comment.y = topPadding + (randomLane * laneHeight) + (-ascent)
-                synchronized(lanes[randomLane]) {
-                    lanes[randomLane].add(comment)
-                }
-            }
-
-            synchronized(comments) {
-                comments.add(comment)
-                if (comments.size > 300) {
-                    removeOldestComment()
-                }
-            }
+            commentQueue.offer(comment)
         }.start()
     }
 
@@ -109,13 +90,6 @@ class CommentRender @JvmOverloads constructor(
         return bitmap
     }
 
-    private fun removeOldestComment() {
-        if (comments.isNotEmpty()) {
-            val oldestComment = comments.removeAt(0)
-            lanes[oldestComment.lane].remove(oldestComment)
-        }
-    }
-
     private fun drawComments(canvas: Canvas?) {
         if (canvas == null) return
 
@@ -125,30 +99,63 @@ class CommentRender @JvmOverloads constructor(
         if (elapsedTime < availableTime) {
 //            Thread.sleep(availableTime - elapsedTime)
         }
+
+        val componentWidth = width.toFloat()
+
         lastTime = System.currentTimeMillis()
 
         canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR)
 
+        while (commentQueue.isNotEmpty()) {
+            val comment = commentQueue.poll()
+
+            var laneIndex = 0
+
+            val availableLaneIndexes =
+                (0..maxLanes).toList()
+                    .filter { it !in lastComments.map { comment -> comment.lane } }
+
+            val availableLaneComment = lastComments.sortedBy { it.lane }.find { comment ->
+                (comment.x + comment.width + spacing) < width.toFloat()
+            }
+
+            if (availableLaneIndexes.isNotEmpty()) {
+                laneIndex = if (availableLaneComment != null) {
+                    min(availableLaneIndexes[0], availableLaneComment.lane)
+                } else {
+                    availableLaneIndexes[0]
+                }
+            } else if (availableLaneIndexes.isEmpty() && availableLaneComment == null) {
+                laneIndex = Random.nextInt(
+                    0,
+                    maxLanes
+                )
+            }
+
+            comment.lane = laneIndex
+            comment.y = topPadding + (comment.lane * laneHeight) + (-ascent)
+
+            lastComments.add(comment)
+            comments.add(comment)
+        }
+
         val time = measureTimeMillis {
-            synchronized(lanes) {
-                for (lane in lanes) {
-                    synchronized(comments) {
-                        synchronized(lane) {
-                            val iterator = lane.iterator()
-                            while (iterator.hasNext()) {
-                                val comment = iterator.next()
-                                comment.bitmap?.let {
-                                    canvas.drawBitmap(it, comment.x, comment.y, copyPaint)
-                                }
-                                comment.x -= comment.velocity * (elapsedTime / availableTime)
-                                if (comment.x < -comment.textWidth) {
-                                    iterator.remove()
-                                    lanes[comment.lane].remove(comment)
-                                    comments.remove(comment)
-                                }
-                            }
-                        }
-                    }
+            val iterator = comments.iterator()
+
+            while (iterator.hasNext()) {
+                val comment = iterator.next()
+
+                comment.bitmap?.let {
+                    canvas.drawBitmap(it, comment.x, comment.y, copyPaint)
+                }
+                comment.x -= comment.velocity * (elapsedTime / availableTime)
+
+                if (comment.x < componentWidth - comment.width) {
+                    lastComments.remove(comment)
+                }
+
+                if (comment.x < -comment.width) {
+                    iterator.remove()
                 }
             }
         }
@@ -159,10 +166,6 @@ class CommentRender @JvmOverloads constructor(
     override fun surfaceCreated(holder: SurfaceHolder) {
         laneHeight = calculateLaneHeight()
         maxLanes = (height / laneHeight).toInt().coerceAtLeast(1)
-        lanes.clear()
-        for (i in 0 until maxLanes) {
-            lanes.add(mutableListOf())
-        }
 
         drawing = true
         drawThread = Thread {
