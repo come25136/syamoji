@@ -130,7 +130,7 @@ class EpgFragment : ProgramGuideFragment<EpgFragment.Program>() {
                         .map { tvData ->
                             tvData.programmes.mapIndexed { i, tvDataProgram ->
                                 val program = Program(
-                                    (channelsById[tvDataProgram.channel]!!.id + i).toLong(),
+                                    (channelsById[tvDataProgram.channel]!!.id + (tvDataProgram.start.toEpochSecond() / 60).toString()).toLong(),
                                     tvDataProgram.title,
                                     tvDataProgram.desc ?: "",
                                     if (tvDataProgram.categories.isEmpty()) "" else tvDataProgram.categories[0],
