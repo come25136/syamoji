@@ -87,7 +87,7 @@ fun fetchIptvXml(url: String): Observable<Tv> {
                             val reader = StringReader(xmlData)
                             val tvData = serializer.read(Tv::class.java, reader)
                             tvData.programmes =
-                                tvData.programmes.filter { it.title.isNotBlank() && it.desc.isNotBlank() }
+                                tvData.programmes.filter { it.title.isNotBlank() }
                                     .toMutableList()
 
                             if (!emitter.isDisposed) {
