@@ -30,11 +30,19 @@ data class Comment(
 class CommentRender @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null
 ) : SurfaceView(context, attrs), SurfaceHolder.Callback {
+    private val globalFontSize = 45f
 
     private val comments = mutableListOf<Comment>()
     private val paint = Paint().apply {
         isAntiAlias = true
         typeface = Typeface.DEFAULT_BOLD
+        textSize = globalFontSize
+    }
+    private val strokePaint = Paint().apply {
+        isAntiAlias = true
+        typeface = Typeface.DEFAULT_BOLD
+        textSize = globalFontSize
+        style = Paint.Style.STROKE
     }
     private val copyPaint = Paint().apply {
         color = Color.argb((255 * 0.9).toInt(), 255, 255, 255)
@@ -44,9 +52,8 @@ class CommentRender @JvmOverloads constructor(
     private var laneHeight: Float = 0f
     private var maxLanes = 0
 
-    private val globalFontSize = 45f
-    private val spacing = 30f
-    private val topPadding = 10f
+    private val spacing = 3f
+    private val topPadding = 5f
 
     private val fontMetrics = paint.fontMetrics
     private val ascent = fontMetrics.ascent
@@ -59,7 +66,6 @@ class CommentRender @JvmOverloads constructor(
     private val lastComments = arrayListOf<Comment>();
 
     init {
-        paint.textSize = globalFontSize
         holder.addCallback(this)
         holder.setFormat(PixelFormat.TRANSLUCENT)
 //        setZOrderOnTop(true)
@@ -87,6 +93,7 @@ class CommentRender @JvmOverloads constructor(
         val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
         canvas.drawText(text, 0f, -paint.ascent(), paint)
+        canvas.drawText(text, 0f, -paint.ascent(), strokePaint)
         return bitmap
     }
 
@@ -133,7 +140,7 @@ class CommentRender @JvmOverloads constructor(
             }
 
             comment.lane = laneIndex
-            comment.y = topPadding + (comment.lane * laneHeight) + (-ascent)
+            comment.y = topPadding + (comment.lane * laneHeight)
 
             lastComments.add(comment)
             comments.add(comment)
