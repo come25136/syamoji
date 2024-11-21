@@ -61,8 +61,12 @@ class VLCRenderActivity : AppCompatActivity(), WebSocketListener {
         // URLの取得
         streamUrl = intent.getStringExtra("streamUrl")!!
 
+        val options = listOf(
+            "--network-caching=100",
+        )
+
         // VLCのインスタンスを作成
-        libVLC = LibVLC(this)
+        libVLC = LibVLC(this, options)
         mediaPlayer = MediaPlayer(libVLC)
 
         // SurfaceViewに関連付け
@@ -166,7 +170,7 @@ class VLCRenderActivity : AppCompatActivity(), WebSocketListener {
         )
         Log.d("Comment", autoComment.text)
         CoroutineScope(Dispatchers.Default).launch {
-            delay(50)
+            delay(100)
             commentRender.addComment(autoComment)
         }
     }
