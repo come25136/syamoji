@@ -37,7 +37,7 @@ class ProgramGuideManager<T> {
         internal val ENTRY_MIN_DURATION = TimeUnit.MINUTES.toMillis(2) // 2 min
         private val MAX_UNACCOUNTED_TIME_BEFORE_GAP = TimeUnit.MINUTES.toMillis(15) // 15 min
 
-        private const val DAY_STARTS_AT_HOUR = 4
+        private const val DAY_STARTS_AT_HOUR = 0
         private const val DAY_ENDS_NEXT_DAY_AT_HOUR = 4
 
         private val TAG: String = ProgramGuideManager::class.java.name
