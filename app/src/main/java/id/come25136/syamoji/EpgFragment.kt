@@ -63,7 +63,7 @@ class EpgFragment : ProgramGuideFragment<EpgFragment.Program>() {
         val streamUrl = innerSchedule.channel.streamUrl.toString()
 
         if (programGuideSchedule.isCurrentProgram) {
-            val intent = Intent(activity, VideoRenderActivity::class.java)
+            val intent = Intent(activity, VLCRenderActivity::class.java)
             intent.putExtra("streamUrl", streamUrl)
             intent.putExtra("channelId", innerSchedule.channel.id)
             startActivity(intent)

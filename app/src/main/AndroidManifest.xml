@@ -26,6 +26,9 @@
             android:name=".VideoRenderActivity"
             android:exported="false" />
         <activity
+            android:name=".VLCRenderActivity"
+            android:exported="false" />
+        <activity
             android:name=".CommentActivity"
             android:exported="false" />
         <activity

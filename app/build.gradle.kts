@@ -63,4 +63,6 @@ dependencies {
 
     implementation(libs.m3u.parser)
     implementation(libs.androidx.media3.session)
+
+    implementation("org.videolan.android:libvlc-all:4.0.0-eap15")
 }
