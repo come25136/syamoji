@@ -43,6 +43,7 @@ class CommentRender @JvmOverloads constructor(
         typeface = Typeface.DEFAULT_BOLD
         textSize = globalFontSize
         style = Paint.Style.STROKE
+        strokeWidth = 2f
     }
     private val copyPaint = Paint().apply {
         color = Color.argb((255 * 0.9).toInt(), 255, 255, 255)
@@ -89,11 +90,14 @@ class CommentRender @JvmOverloads constructor(
 
     private fun createTextBitmap(text: String, paint: Paint): Bitmap {
         val width = paint.measureText(text).toInt()
-        val height = (paint.descent() - paint.ascent()).toInt()
+        var height = (paint.descent() - paint.ascent()).toInt()
+        if (height <= 0) {
+            height = 1
+        }
         val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
-        canvas.drawText(text, 0f, -paint.ascent(), paint)
         canvas.drawText(text, 0f, -paint.ascent(), strokePaint)
+        canvas.drawText(text, 0f, -paint.ascent(), paint)
         return bitmap
     }
 
