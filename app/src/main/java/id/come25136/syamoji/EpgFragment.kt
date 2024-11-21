@@ -142,7 +142,7 @@ class EpgFragment : ProgramGuideFragment<EpgFragment.Program>() {
                                     tvDataProgram.start,
                                     tvDataProgram.stop,
                                 )
-                            }
+                            }.sortedBy { it.startsAtMillis } // 時系列にしないとguideで正しく表示されない（配列順に描画される）
                         }
                         .map { programs ->
                             programs.groupBy { it.program!!.channel.id }
