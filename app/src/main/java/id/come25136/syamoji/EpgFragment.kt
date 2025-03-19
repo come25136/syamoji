@@ -124,15 +124,11 @@ class EpgFragment : ProgramGuideFragment<EpgFragment.Program>() {
                 { channels ->
                     val channelsById = channels.associateBy { it.id }
 
-                    val now = ZonedDateTime.now()
-
                     fetchIptvXml("http://192.168.20.10:40772/api/iptv/xmltv")
                         .subscribeOn(Schedulers.io())
                         .observeOn(Schedulers.single())
                         .map { tvData ->
-                            tvData.programmes.filter { tvDataProgram ->
-                                tvDataProgram.stop.isAfter(now)
-                            }.map { tvDataProgram ->
+                            tvData.programmes.mapIndexed { i, tvDataProgram ->
                                 val program = Program(
                                     (channelsById[tvDataProgram.channel]!!.id + (tvDataProgram.start.toEpochSecond() / 60).toString()).toLong(),
                                     tvDataProgram.title,
@@ -143,7 +139,7 @@ class EpgFragment : ProgramGuideFragment<EpgFragment.Program>() {
 
                                 createSchedule(
                                     program,
-                                    if (tvDataProgram.start.isBefore(now)) now else tvDataProgram.start,
+                                    tvDataProgram.start,
                                     tvDataProgram.stop,
                                 )
                             }.sortedBy { it.startsAtMillis } // 時系列にしないとguideで正しく表示されない（配列順に描画される）
