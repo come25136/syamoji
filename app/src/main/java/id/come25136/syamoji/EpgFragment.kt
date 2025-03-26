@@ -35,7 +35,7 @@ class EpgFragment : ProgramGuideFragment<EpgFragment.Program>() {
     override val SELECTABLE_DAYS_IN_PAST: Int
         get() = 0
     override val DATE_WITH_DAY_FORMATTER: DateTimeFormatter
-        get() = DateTimeFormatter.ofPattern("M月 d日（EEE）").withLocale(DISPLAY_LOCALE)
+        get() = DateTimeFormatter.ofPattern("d日").withLocale(DISPLAY_LOCALE)
 
     data class Channel(
         override val id: String, // Mirakurun内部ではnetworkId + serviceIdとして扱われているもの
