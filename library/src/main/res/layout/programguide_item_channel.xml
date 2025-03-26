@@ -38,6 +38,7 @@
     <TextView
         android:id="@+id/programguide_channel_name"
         style="@style/ProgramGuide.Image.id.come25136.syamoji.Channel"
+        android:layout_marginStart="3dp"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         tools:text="NPO Zappelin Xtra"/>
