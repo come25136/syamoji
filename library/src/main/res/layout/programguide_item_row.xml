@@ -14,22 +14,13 @@
   ~ limitations under the License.
   -->
 
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
+    android:layout_width="wrap_content"
+    android:layout_height="match_parent"
     android:focusable="false"
-    android:orientation="horizontal"
+    android:orientation="vertical"
     tools:ignore="RtlHardcoded">
-
-    <!-- Focusable is set false to prevent accessibility focus being put on this layout -->
-    <com.egeniq.androidtvprogramguide.row.ProgramGuideRowGridView
-        android:id="@+id/row"
-        android:layout_width="match_parent"
-        android:layout_height="@dimen/programguide_program_row_height_with_empty_space"
-        android:clipToPadding="false"
-        android:paddingStart="@dimen/programguide_channel_column_width"
-        tools:ignore="RtlSymmetry" />
 
     <include
         layout="@layout/programguide_item_channel"
@@ -37,5 +28,13 @@
         android:layout_height="@dimen/programguide_program_row_height_with_empty_space"
         android:layout_gravity="start" />
 
+    <!-- Focusable is set false to prevent accessibility focus being put on this layout -->
+    <com.egeniq.androidtvprogramguide.row.ProgramGuideRowGridView
+        android:id="@+id/row"
+        android:layout_width="@dimen/programguide_channel_column_width"
+        android:layout_height="match_parent"
+        android:clipToPadding="false"
+        tools:ignore="RtlSymmetry" />
 
-</FrameLayout>
+
+</LinearLayout>

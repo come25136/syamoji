@@ -23,6 +23,9 @@ import com.egeniq.androidtvprogramguide.entity.ProgramGuideSchedule
 import com.egeniq.androidtvprogramguide.util.FixedZonedDateTime
 import org.threeten.bp.LocalDate
 import org.threeten.bp.ZoneId
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import java.util.concurrent.TimeUnit
 import kotlin.math.max
 
@@ -80,7 +83,7 @@ class ProgramGuideManager<T> {
 
     @Suppress("ConvertTwoComparisonsToRangeCheck")
     private fun updateChannelsTimeRange(selectedDate: LocalDate, timeZone: ZoneId) {
-        val viewPortWidth = toUtcMillis - fromUtcMillis
+        val viewPortHeight = toUtcMillis - fromUtcMillis
         var newStartMillis: Long? = null
         var newEndMillis: Long? = null
         for (channel in channels) {
@@ -257,7 +260,7 @@ class ProgramGuideManager<T> {
                 channelEntriesMap[channelId] = entries
             }
         }
-        setTimeRange(startUtcMillis, startUtcMillis + viewPortWidth)
+        setTimeRange(startUtcMillis, startUtcMillis + viewPortHeight)
     }
 
     /**
@@ -298,7 +301,11 @@ class ProgramGuideManager<T> {
 
     /** Returned the scrolled(shifted) time in milliseconds.  */
     internal fun getShiftedTime(): Long {
-        return fromUtcMillis - startUtcMillis
+        val shiftedTime = fromUtcMillis - startUtcMillis
+//        Log.d(TAG, "getShiftedTime() called: fromUtcMillis = $fromUtcMillis (${formatTime(fromUtcMillis)})")
+//        Log.d(TAG, "getShiftedTime() called: startUtcMillis = $startUtcMillis (${formatTime(startUtcMillis)})")
+//        Log.d(TAG, "getShiftedTime() called: shiftedTime = $shiftedTime (${formatTime(shiftedTime)})")
+        return shiftedTime
     }
 
     /** Returns the start time set by [.updateInitialTimeRange].  */
@@ -311,11 +318,17 @@ class ProgramGuideManager<T> {
     }
 
     private fun setTimeRange(fromUtcMillis: Long, toUtcMillis: Long) {
+        Log.v(TAG, "${this.fromUtcMillis != fromUtcMillis || this.toUtcMillis != toUtcMillis} this.fromUtcMillis:${formatTime(this.fromUtcMillis)} fromUtcMillis:${formatTime(fromUtcMillis)} / this.toUtcMillis:${formatTime(this.toUtcMillis)} toUtcMillis:${formatTime(toUtcMillis)}")
         if (this.fromUtcMillis != fromUtcMillis || this.toUtcMillis != toUtcMillis) {
             this.fromUtcMillis = fromUtcMillis
             this.toUtcMillis = toUtcMillis
             notifyTimeRangeUpdated()
         }
+    }
+
+    private fun formatTime(millis: Long): String {
+        val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+        return sdf.format(Date(millis))
     }
 
     /**

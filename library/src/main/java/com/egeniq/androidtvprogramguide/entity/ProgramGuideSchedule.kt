@@ -82,7 +82,7 @@ data class ProgramGuideSchedule<T>(
         }
     }
 
-    val width = ProgramGuideUtil.convertMillisToPixel(startsAtMillis, endsAtMillis)
+    val height = ProgramGuideUtil.convertMillisToPixel(startsAtMillis, endsAtMillis)
     val isGap = program == null
     val isCurrentProgram: Boolean
         get() {

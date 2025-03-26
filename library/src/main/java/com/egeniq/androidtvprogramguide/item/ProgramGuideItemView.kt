@@ -43,8 +43,8 @@ class ProgramGuideItemView<T> : FrameLayout {
     private val staticItemPadding: Int =
         resources.getDimensionPixelOffset(R.dimen.programguide_item_padding)
 
-    private var itemTextWidth: Int = 0
-    private var maxWidthForRipple: Int = 0
+    private var itemTextHeight: Int = 0
+    private var maxHeightForRipple: Int = 0
     private var preventParentRelayout = false
 
     private val titleView: TextView
@@ -68,12 +68,12 @@ class ProgramGuideItemView<T> : FrameLayout {
         val layoutParams = layoutParams
         if (layoutParams != null) {
             val spacing = resources.getDimensionPixelSize(R.dimen.programguide_item_spacing)
-            layoutParams.width =
-                scheduleItem.width - 2 * spacing // Here we subtract the spacing, otherwise the calculations will be wrong at other places
+            layoutParams.height =
+                scheduleItem.height - 2 * spacing // Here we subtract the spacing, otherwise the calculations will be wrong at other places
             // If the programme is very short, and the table width is also reduced, or the gap is enlarged,
             // there is an edge case that we could go into negative widths. This fixes that.
-            if (layoutParams.width < 1) {
-                layoutParams.width = 1
+            if (layoutParams.height < 1) {
+                layoutParams.height = 1
             }
             setLayoutParams(layoutParams)
         }
@@ -107,9 +107,9 @@ class ProgramGuideItemView<T> : FrameLayout {
             MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED),
             MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED)
         )
-        itemTextWidth = titleView.measuredWidth - titleView.paddingLeft - titleView.paddingRight
+        itemTextHeight = titleView.measuredHeight - titleView.paddingTop - titleView.paddingBottom
         // Maximum width for us to use a ripple
-        maxWidthForRipple = ProgramGuideUtil.convertMillisToPixel(fromUtcMillis, toUtcMillis)
+        maxHeightForRipple = ProgramGuideUtil.convertMillisToPixel(fromUtcMillis, toUtcMillis)
     }
 
     private fun updateText(title: String?) {
@@ -139,13 +139,13 @@ class ProgramGuideItemView<T> : FrameLayout {
         val parentView = parent as View
         if (layoutDirection == LAYOUT_DIRECTION_LTR) {
             layoutVisibleArea(
-                parentView.left + parentView.paddingStart - left,
-                right - parentView.right
+                parentView.top + parentView.paddingTop - top,
+                bottom - parentView.bottom
             )
         } else {
             layoutVisibleArea(
-                parentView.left - left,
-                right - parentView.right + parentView.paddingStart
+                parentView.top - top,
+                bottom - parentView.bottom + parentView.paddingTop
             )
         }
     }
@@ -159,42 +159,42 @@ class ProgramGuideItemView<T> : FrameLayout {
      * 2. Try showing whole text in visible area by placing and wrapping text, but do not wrap text less than 30min.
      * 3. Episode title is visible only if title isn't multi-line.
      *
-     * @param leftOffset Amount of pixels the view sticks out on the left side of the screen. If it is negative, it does not stick out.
-     * @param rightOffset Amount of pixels the view sticks out on the right side of the screen. If it is negative, it does not stick out.
+     * @param topOffset Amount of pixels the view sticks out on the left side of the screen. If it is negative, it does not stick out.
+     * @param bottomOffset Amount of pixels the view sticks out on the right side of the screen. If it is negative, it does not stick out.
      */
-    private fun layoutVisibleArea(leftOffset: Int, rightOffset: Int) {
-        val width = schedule?.width ?: 0
-        var leftPadding = max(0, leftOffset)
-        var rightPadding = max(0, rightOffset)
-        val minWidth = min(width, itemTextWidth + 2 * staticItemPadding)
-        if (leftPadding > 0 && width - leftPadding < minWidth) {
-            leftPadding = max(0, width - minWidth)
+    private fun layoutVisibleArea(topOffset: Int, bottomOffset: Int) {
+        val height = schedule?.height ?: 0
+        var topPadding = max(0, topOffset)
+        var bottomPadding = max(0, bottomOffset)
+        val minHeight = min(height, itemTextHeight + 2 * staticItemPadding)
+        if (topPadding > 0 && height - topPadding < minHeight) {
+            topPadding = max(0, height - minHeight)
         }
-        if (rightPadding > 0 && width - rightPadding < minWidth) {
-            rightPadding = max(0, width - minWidth)
+        if (bottomPadding > 0 && height - bottomPadding < minHeight) {
+            bottomPadding = max(0, height - minHeight)
         }
 
         if (parent.layoutDirection == LAYOUT_DIRECTION_LTR) {
-            if (leftPadding + staticItemPadding != paddingStart || rightPadding + staticItemPadding != paddingEnd) {
+            if (topPadding + staticItemPadding != paddingTop || bottomPadding + staticItemPadding != paddingBottom) {
                 // The size of this view is kept, no need to tell parent.
                 preventParentRelayout = true
 
                 titleView.setPaddingRelative(
-                    leftPadding + staticItemPadding,
                     0,
-                    rightPadding + staticItemPadding,
-                    0
+                    topPadding + staticItemPadding,
+                    0,
+                    bottomPadding + staticItemPadding,
                 )
                 preventParentRelayout = false
             }
         } else {
-            if (leftPadding + staticItemPadding != paddingEnd || rightPadding + staticItemPadding != paddingStart) {
+            if (topPadding + staticItemPadding != paddingBottom || bottomPadding + staticItemPadding != paddingBottom) {
                 // In this case, we need to tell the parent to do a relayout, RTL is a bit more complicated, it seems.
                 titleView.setPaddingRelative(
-                    rightPadding + staticItemPadding,
                     0,
-                    leftPadding + staticItemPadding,
-                    0
+                    bottomPadding + staticItemPadding,
+                    0,
+                    topPadding + staticItemPadding,
                 )
             }
         }

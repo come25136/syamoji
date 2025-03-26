@@ -43,16 +43,9 @@
         app:layout_constraintTop_toTopOf="parent" />
 
     <Space
-        android:id="@+id/programguide_timeline_row_negative_margin"
-        android:layout_width="@dimen/programguide_time_row_negative_margin"
+        android:id="@+id/programguide_current_time_indicator_left_offset"
+        android:layout_width="@dimen/programguide_current_time_indicator_left_height"
         android:layout_height="0dp"
-        app:layout_constraintEnd_toEndOf="@id/left_channel_guideline"
-        app:layout_constraintTop_toTopOf="@id/programguide_top_margin" />
-
-    <Space
-        android:id="@+id/programguide_current_time_indicator_top_offset"
-        android:layout_width="0dp"
-        android:layout_height="@dimen/programguide_current_time_indicator_top_height"
         app:layout_constraintBottom_toTopOf="@id/background"
         app:layout_constraintStart_toStartOf="parent" />
 
@@ -104,7 +97,7 @@
         android:layout_width="0dp"
         android:layout_height="0dp"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/programguide_menu_visible_margin" />
+        app:layout_constraintBottom_toBottomOf="parent" />
 
     <View
         android:id="@+id/background"
@@ -113,8 +106,9 @@
         android:background="@color/programguide_content_background"
         app:layout_constraintBottom_toTopOf="@id/bottom_detail"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/programguide_time_row" />
+        app:layout_constraintStart_toEndOf="@id/programguide_time_row"
+        app:layout_constraintTop_toBottomOf="@id/programguide_day_filter"
+        />
 
     <View
         android:id="@+id/focus_catcher"
@@ -133,8 +127,8 @@
         android:inAnimation="@android:anim/fade_in"
         android:outAnimation="@android:anim/fade_out"
         app:layout_constraintBottom_toBottomOf="@id/background"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="@id/background"
+        app:layout_constraintStart_toStartOf="@id/background"
         app:layout_constraintTop_toTopOf="@id/background">
 
         <!-- Loading state -->
@@ -163,22 +157,21 @@
 
     <Space
         android:id="@+id/left_channel_guideline"
-        android:layout_width="@dimen/programguide_channel_column_width"
-        android:layout_height="0dp"
+        android:layout_width="0dp"
+        android:layout_height="@dimen/programguide_channel_column_width"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
     <com.egeniq.androidtvprogramguide.timeline.ProgramGuideTimelineRow
         android:id="@+id/programguide_time_row"
-        android:layout_width="0dp"
-        android:layout_height="@dimen/programguide_time_row_height"
-        android:layout_marginTop="60dp"
+        android:layout_width="@dimen/programguide_time_column_width"
+        android:layout_height="0dp"
         android:alpha="0"
-        android:fadingEdgeLength="20dp"
+        android:fadingEdgeLength="0dp"
         android:requiresFadingEdge="horizontal"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="@id/programguide_timeline_row_negative_margin"
-        app:layout_constraintTop_toTopOf="@id/programguide_top_margin"
+        app:layout_constraintBottom_toTopOf="@id/bottom_detail"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/programguide_current_date"
         tools:alpha="1"
         tools:listitem="@layout/programguide_item_time" />
 
@@ -188,9 +181,8 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginStart="@dimen/programguide_page_left_padding"
-        app:layout_constraintBottom_toTopOf="@id/programguide_time_row"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="@id/programguide_top_margin" />
+        app:layout_constraintTop_toTopOf="parent" />
 
     <include
         android:id="@+id/programguide_time_of_day_filter"
@@ -198,29 +190,27 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginStart="@dimen/programguide_filter_spacing"
-        app:layout_constraintBottom_toTopOf="@id/programguide_time_row"
+        app:layout_constraintBottom_toTopOf="@id/background"
         app:layout_constraintStart_toEndOf="@id/programguide_day_filter"
-        app:layout_constraintTop_toTopOf="@id/programguide_top_margin" />
+        app:layout_constraintTop_toTopOf="parent" />
 
     <include
         android:id="@+id/programguide_current_date"
         layout="@layout/programguide_item_time"
         android:layout_width="wrap_content"
-        android:layout_height="@dimen/programguide_time_row_height"
-        android:layout_marginStart="@dimen/programguide_page_left_padding"
+        android:layout_height="@dimen/programguide_program_row_height_with_empty_space"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="@id/programguide_time_row" />
+        app:layout_constraintTop_toTopOf="@id/background" />
 
     <include
         android:id="@+id/programguide_current_time_indicator"
         layout="@layout/programguide_item_time_indicator"
-        android:layout_width="wrap_content"
-        android:layout_height="0dp"
-        android:layout_marginStart="@dimen/programguide_channel_column_width"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/programguide_program_row_height_with_empty_space"
         android:visibility="gone"
-        app:layout_constraintBottom_toBottomOf="@id/background"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="@id/programguide_current_time_indicator_top_offset"
+        app:layout_constraintStart_toStartOf="@id/programguide_current_time_indicator_left_offset"
+        app:layout_constraintTop_toTopOf="@id/background"
         tools:visibility="visible" />
 
     <View

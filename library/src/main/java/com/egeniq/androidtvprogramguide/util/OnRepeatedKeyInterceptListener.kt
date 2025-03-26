@@ -21,12 +21,12 @@ import android.os.Message
 import android.view.KeyEvent
 import android.view.View
 import androidx.leanback.widget.BaseGridView
-import androidx.leanback.widget.VerticalGridView
+import androidx.leanback.widget.HorizontalGridView
 
 /**
  * Listener to make focus change faster over time.
  * */
-class OnRepeatedKeyInterceptListener(private val verticalGridView: VerticalGridView) :
+class OnRepeatedKeyInterceptListener(private val verticalGridView: HorizontalGridView) :
     BaseGridView.OnKeyInterceptListener {
 
     companion object {
@@ -44,7 +44,7 @@ class OnRepeatedKeyInterceptListener(private val verticalGridView: VerticalGridV
 
     override fun onInterceptKeyEvent(event: KeyEvent): Boolean {
         mHandler.removeMessages(MSG_MOVE_FOCUS)
-        if (event.keyCode != KeyEvent.KEYCODE_DPAD_UP && event.keyCode != KeyEvent.KEYCODE_DPAD_DOWN) {
+        if (event.keyCode != KeyEvent.KEYCODE_DPAD_LEFT && event.keyCode != KeyEvent.KEYCODE_DPAD_RIGHT) {
             return false
         }
 
@@ -54,7 +54,7 @@ class OnRepeatedKeyInterceptListener(private val verticalGridView: VerticalGridV
             return false
         }
         mDirection =
-            if (event.keyCode == KeyEvent.KEYCODE_DPAD_UP) View.FOCUS_UP else View.FOCUS_DOWN
+            if (event.keyCode == KeyEvent.KEYCODE_DPAD_LEFT) View.FOCUS_LEFT else View.FOCUS_RIGHT
         var skippedViewCount = MAX_SKIPPED_VIEW_COUNT[0]
         for (i in 1 until THRESHOLD_FAST_FOCUS_CHANGE_TIME_MS.size) {
             if (THRESHOLD_FAST_FOCUS_CHANGE_TIME_MS[i] < duration) {

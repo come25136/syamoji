@@ -55,25 +55,25 @@ class ProgramGuideTimelineRow @JvmOverloads constructor(
 
     /** Scrolls horizontally to the given position.  */
     fun scrollTo(scrollOffset: Int, smoothScroll: Boolean) {
-        val dx = scrollOffset - currentScrollOffset
+        val dy = scrollOffset - currentScrollOffset
         if (smoothScroll) {
             if (layoutDirection == LAYOUT_DIRECTION_LTR) {
-                smoothScrollBy(dx, 0)
+                smoothScrollBy(0, dy)
             } else {
-                smoothScrollBy(-dx, 0)
+                smoothScrollBy(0, -dy)
             }
         } else {
             if (layoutDirection == LAYOUT_DIRECTION_LTR) {
-                scrollBy(dx, 0)
+                scrollBy(0, dy)
             } else {
-                scrollBy(-dx, 0)
+                scrollBy(0, -dy)
             }
         }
     }
 
 
     override fun onScrolled(dx: Int, dy: Int) {
-        scrollPosition += dx
+        scrollPosition += dy
     }
 
     override fun getLeftFadingEdgeStrength(): Float {

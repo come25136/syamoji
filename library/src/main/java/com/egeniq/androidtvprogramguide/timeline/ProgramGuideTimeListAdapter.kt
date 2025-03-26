@@ -82,12 +82,12 @@ class ProgramGuideTimeListAdapter(
         (itemView as TextView).text = timeString
 
         val lp = itemView.layoutParams as RecyclerView.LayoutParams
-        lp.width = ProgramGuideUtil.convertMillisToPixel(startTime, endTime)
+        lp.height = ProgramGuideUtil.convertMillisToPixel(startTime, endTime)
         if (position == 0) {
-            // Adjust width for the first entry to make the item starts from the fading edge.
-            lp.marginStart = rowHeaderOverlapping - lp.width / 2 - timelineAdjustmentPixels
+            // Adjust height for the first entry to make the item starts from the fading edge.
+            lp.topMargin = rowHeaderOverlapping - lp.height / 2 - timelineAdjustmentPixels
         } else {
-            lp.marginStart = 0
+            lp.topMargin = 0
         }
         itemView.layoutParams = lp
     }

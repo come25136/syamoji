@@ -17,7 +17,6 @@
 package com.egeniq.androidtvprogramguide
 
 import android.annotation.SuppressLint
-import android.content.res.Resources
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -25,6 +24,7 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.ViewTreeObserver
 import android.widget.FrameLayout
 import android.widget.TextView
 import android.widget.ViewAnimator
@@ -45,7 +45,6 @@ import com.egeniq.androidtvprogramguide.item.ProgramGuideItemView
 import com.egeniq.androidtvprogramguide.row.ProgramGuideRowAdapter
 import com.egeniq.androidtvprogramguide.row.ProgramGuideRowGridView
 import com.egeniq.androidtvprogramguide.timeline.ProgramGuideTimeListAdapter
-import com.egeniq.androidtvprogramguide.timeline.ProgramGuideTimelineGridView
 import com.egeniq.androidtvprogramguide.timeline.ProgramGuideTimelineRow
 import com.egeniq.androidtvprogramguide.util.FilterOption
 import com.egeniq.androidtvprogramguide.util.FixedLocalDateTime
@@ -57,7 +56,7 @@ import org.threeten.bp.ZoneId
 import org.threeten.bp.ZoneOffset
 import org.threeten.bp.format.DateTimeFormatter
 import org.threeten.bp.temporal.ChronoUnit
-import java.util.*
+import java.util.Locale
 import java.util.concurrent.TimeUnit
 
 abstract class ProgramGuideFragment<T> : Fragment(), ProgramGuideManager.Listener,
@@ -96,6 +95,7 @@ abstract class ProgramGuideFragment<T> : Fragment(), ProgramGuideManager.Listene
     protected open val SELECTABLE_DAYS_IN_FUTURE = 7
     protected open val USE_HUMAN_DATES = true
     protected open val CAN_FOCUS_CHANNEL = false
+
     // Synchronizes the scrolls of the RecyclerViews. This is required if you expect pointer events in your application.
     // Normally this would not be possible on Android TV (although the user could hook up a mouse via USB), and since this
     // features requires extra listeners and manual scrolling on the views, which reduces performance, this feature is turned off by default.
@@ -111,10 +111,10 @@ abstract class ProgramGuideFragment<T> : Fragment(), ProgramGuideManager.Listene
     @LayoutRes
     protected open val OVERRIDE_LAYOUT_ID: Int? = null
 
-    private var selectionRow = 0
-    private var rowHeight = 0
+    private var selectionColumn = 0
+    private var columnWidth = 0
     private var didScrollToBestProgramme = false
-    private var currentTimeIndicatorWidth = 0
+    private var currentTimeIndicatorHeight = 0
     private var timelineAdjustmentPixels = 0
     private var isInitialScroll = true
     private var isJumpingGridInTime = false
@@ -144,8 +144,8 @@ abstract class ProgramGuideFragment<T> : Fragment(), ProgramGuideManager.Listene
 
     override val programGuideManager = ProgramGuideManager<T>()
 
-    private var gridWidth = 0
-    private var widthPerHour = 0
+    private var gridHeight = 0
+    private var heightPerHour = 0
     private var viewportMillis = 0L
 
     private var focusEnabledScrollListener: RecyclerView.OnScrollListener? = null
@@ -250,16 +250,19 @@ abstract class ProgramGuideFragment<T> : Fragment(), ProgramGuideManager.Listene
                         FILTER_DATE_FORMATTER.format(now.plusDays(indexLong)),
                         false
                     )
+
                     USE_HUMAN_DATES && dayIndex == 0 -> FilterOption(
                         getString(R.string.programguide_day_today),
                         FILTER_DATE_FORMATTER.format(now.plusDays(indexLong)),
                         true
                     )
+
                     USE_HUMAN_DATES && dayIndex == 1 -> FilterOption(
                         getString(R.string.programguide_day_tomorrow),
                         FILTER_DATE_FORMATTER.format(now.plusDays(indexLong)),
                         false
                     )
+
                     else -> FilterOption(
                         DATE_WITH_DAY_FORMATTER.format(now.plusDays(indexLong)),
                         FILTER_DATE_FORMATTER.format(now.plusDays(indexLong)),
@@ -348,7 +351,7 @@ abstract class ProgramGuideFragment<T> : Fragment(), ProgramGuideManager.Listene
      * the current timestamp.
      */
     private fun setJumpToLiveButtonVisible(visible: Boolean) {
-        jumpToLive?.visibility = if (visible) View.VISIBLE else View.GONE
+//        jumpToLive?.visibility = if (visible) View.VISIBLE else View.GONE
     }
 
 
@@ -375,14 +378,14 @@ abstract class ProgramGuideFragment<T> : Fragment(), ProgramGuideManager.Listene
     @Suppress("ObjectLiteralToLambda", "DEPRECATION")
     @SuppressLint("RestrictedApi")
     private fun setupComponents(view: View) {
-        selectionRow = resources.getInteger(R.integer.programguide_selection_row)
-        rowHeight =
-            resources.getDimensionPixelSize(R.dimen.programguide_program_row_height_with_empty_space)
-        widthPerHour = resources.getDimensionPixelSize(R.dimen.programguide_table_width_per_hour)
-        ProgramGuideUtil.setWidthPerHour(widthPerHour)
-        val displayWidth = Resources.getSystem().displayMetrics.widthPixels
-        gridWidth =
-            (displayWidth - resources.getDimensionPixelSize(R.dimen.programguide_channel_column_width))
+        selectionColumn = resources.getInteger(R.integer.programguide_selection_row)
+        columnWidth =
+            resources.getDimensionPixelSize(R.dimen.programguide_channel_column_width)
+        heightPerHour = resources.getDimensionPixelSize(R.dimen.programguide_table_height_per_hour)
+        ProgramGuideUtil.setHeightPerHour(heightPerHour)
+//        val displayHeight = Resources.getSystem().displayMetrics.heightPixels
+//        gridHeight =
+//            displayHeight - resources.getDimensionPixelSize(R.dimen.programguide_program_row_height_with_empty_space)
         val onScrollListener = object : RecyclerView.OnScrollListener() {
             override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
                 if (SCROLL_SYNCING) {
@@ -395,7 +398,7 @@ abstract class ProgramGuideFragment<T> : Fragment(), ProgramGuideManager.Listene
                         }
                     }
                 }
-                onHorizontalScrolled(dx)
+                onVerticalScrolled(dy)
             }
 
             override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {
@@ -406,8 +409,9 @@ abstract class ProgramGuideFragment<T> : Fragment(), ProgramGuideManager.Listene
                     val timeRow = recyclerView as ProgramGuideTimelineRow
                     val offset = timeRow.getPointerScrollOffset()
                     if (offset != 0) {
-                        if (!programGuideManager.shiftTime((-offset.toFloat() / widthPerHour * HOUR_IN_MILLIS).toLong())) {
-                            val scrollOffset = (widthPerHour * programGuideManager.getShiftedTime() / HOUR_IN_MILLIS).toInt()
+                        if (!programGuideManager.shiftTime((-offset.toFloat() / heightPerHour * HOUR_IN_MILLIS).toLong())) {
+                            val scrollOffset =
+                                (heightPerHour * programGuideManager.getShiftedTime() / HOUR_IN_MILLIS).toInt()
                             disableScrollSyncUntilOffset = scrollOffset
                             timeRow.scrollTo(scrollOffset, smoothScroll = true)
 
@@ -419,7 +423,8 @@ abstract class ProgramGuideFragment<T> : Fragment(), ProgramGuideManager.Listene
         val timeRow = view.findViewById<ProgramGuideTimelineRow>(R.id.programguide_time_row)!!
         timeRow.addOnScrollListener(onScrollListener)
         if (!created) {
-            viewportMillis = gridWidth * HOUR_IN_MILLIS / widthPerHour
+            viewportMillis = /*gridHeight*/
+                resources.getDimensionPixelSize(R.dimen.programguide_grid_height) * HOUR_IN_MILLIS / heightPerHour
             timelineStartMillis = ProgramGuideUtil.floorTime(
                 System.currentTimeMillis() - MIN_DURATION_FROM_START_TIME_TO_CURRENT_TIME,
                 HALF_HOUR_IN_MILLIS
@@ -430,6 +435,16 @@ abstract class ProgramGuideFragment<T> : Fragment(), ProgramGuideManager.Listene
             )
         }
         view.findViewById<ProgramGuideGridView<T>>(R.id.programguide_grid)?.let {
+            it.viewTreeObserver.addOnGlobalLayoutListener(object :
+                ViewTreeObserver.OnGlobalLayoutListener {
+                override fun onGlobalLayout() {
+                    if (it.height > 0) {
+                        it.viewTreeObserver.removeOnGlobalLayoutListener(this)
+                        gridHeight =
+                            it.height - resources.getDimensionPixelSize(R.dimen.programguide_program_row_height_with_empty_space)
+                    }
+                }
+            })
             it.initialize(programGuideManager)
             // Set the feature flags
             it.setFocusOutSideAllowed(throughStart = false, throughEnd = false)
@@ -438,11 +453,11 @@ abstract class ProgramGuideFragment<T> : Fragment(), ProgramGuideManager.Listene
             it.featureFocusWrapAround = false
 
             it.overlapStart =
-                it.resources.getDimensionPixelOffset(R.dimen.programguide_channel_column_width)
+                0 // it.resources.getDimensionPixelOffset(R.dimen.programguide_channel_column_width)
             it.childFocusListener = this
             it.scheduleSelectionListener = this
             it.focusScrollStrategy = BaseGridView.FOCUS_SCROLL_ALIGNED
-            it.windowAlignmentOffset = selectionRow * rowHeight
+            it.windowAlignmentOffset = selectionColumn * columnWidth
             it.windowAlignmentOffsetPercent = BaseGridView.WINDOW_ALIGN_OFFSET_PERCENT_DISABLED
             it.itemAlignmentOffset = 0
             it.itemAlignmentOffsetPercent = BaseGridView.ITEM_ALIGN_OFFSET_PERCENT_DISABLED
@@ -544,8 +559,8 @@ abstract class ProgramGuideFragment<T> : Fragment(), ProgramGuideManager.Listene
     /**
      * Called when the timerow has scrolled. We should scroll the grid the same way.
      */
-    private fun onHorizontalScrolled(dx: Int) {
-        if (dx == 0) {
+    private fun onVerticalScrolled(dy: Int) {
+        if (dy == 0) {
             return
         }
         updateCurrentTimeIndicator()
@@ -554,7 +569,7 @@ abstract class ProgramGuideFragment<T> : Fragment(), ProgramGuideManager.Listene
         programGuideGrid.let { grid ->
             val n = grid.childCount
             while (i < n) {
-                grid.getChildAt(i).findViewById<View>(R.id.row).scrollBy(dx, 0)
+                grid.getChildAt(i).findViewById<View>(R.id.row).scrollBy(0, dy)
                 ++i
             }
         }
@@ -579,20 +594,20 @@ abstract class ProgramGuideFragment<T> : Fragment(), ProgramGuideManager.Listene
             currentTimeIndicator?.visibility = View.GONE
             setJumpToLiveButtonVisible(currentState != State.Loading && (programGuideManager.getStartTime() <= now && now <= programGuideManager.getEndTime()))
         } else {
-            if (currentTimeIndicatorWidth == 0) {
+            if (currentTimeIndicatorHeight == 0) {
                 currentTimeIndicator?.measure(
                     View.MeasureSpec.UNSPECIFIED,
                     View.MeasureSpec.UNSPECIFIED
                 )
-                currentTimeIndicatorWidth = currentTimeIndicator?.measuredWidth ?: 0
+                currentTimeIndicatorHeight = currentTimeIndicator?.measuredHeight ?: 0
             }
             if (currentTimeIndicator?.layoutDirection == View.LAYOUT_DIRECTION_LTR) {
-                currentTimeIndicator?.translationX = offset - currentTimeIndicatorWidth / 2f
+                currentTimeIndicator?.translationY = offset - currentTimeIndicatorHeight / 2f
             } else {
-                currentTimeIndicator?.translationX = -offset - currentTimeIndicatorWidth / 2f
+                currentTimeIndicator?.translationY = -offset - currentTimeIndicatorHeight / 2f
             }
             currentTimeIndicator?.visibility = View.VISIBLE
-            setJumpToLiveButtonVisible(currentState != State.Loading && offset > gridWidth)
+            setJumpToLiveButtonVisible(currentState != State.Loading && offset > gridHeight)
         }
     }
 
@@ -663,8 +678,11 @@ abstract class ProgramGuideFragment<T> : Fragment(), ProgramGuideManager.Listene
 
     override fun onTimeRangeUpdated() {
         val scrollOffset =
-            (widthPerHour * programGuideManager.getShiftedTime() / HOUR_IN_MILLIS).toInt()
-        Log.v(TAG, "Scrolling program guide with ${scrollOffset}px.")
+            (heightPerHour * programGuideManager.getShiftedTime() / HOUR_IN_MILLIS).toInt()
+        Log.v(
+            TAG,
+            "Scrolling program guide with ${scrollOffset}px. ${programGuideManager.getShiftedTime()} ${HOUR_IN_MILLIS}"
+        )
         if (timeRow?.layoutManager?.childCount == 0 || isInitialScroll) {
             isInitialScroll = false
             timeRow?.post {
@@ -696,6 +714,7 @@ abstract class ProgramGuideFragment<T> : Fragment(), ProgramGuideManager.Listene
                             true // The listener has fired, so later it will also fire at the correct state.
                         timeRow?.removeCallbacks(idleScrollRunnable)
                         if (newState == RecyclerView.SCROLL_STATE_IDLE) {
+
                             timeRow?.removeOnScrollListener(this)
                             idleScrollRunnable.run()
                         }
@@ -818,6 +837,7 @@ abstract class ProgramGuideFragment<T> : Fragment(), ProgramGuideManager.Listene
                 alpha = 1f
                 contentAnimator?.displayedChild = 2
             }
+
             is State.Error -> {
                 alpha = 0f
                 if (state.errorMessage == null) {
@@ -827,6 +847,7 @@ abstract class ProgramGuideFragment<T> : Fragment(), ProgramGuideManager.Listene
                 }
                 contentAnimator?.displayedChild = 1
             }
+
             else -> {
                 alpha = 0f
                 contentAnimator?.displayedChild = 0
@@ -843,22 +864,22 @@ abstract class ProgramGuideFragment<T> : Fragment(), ProgramGuideManager.Listene
 
     /**
      * The GridView calls this method on the fragment when the focused child changes.
-     * This is important because we scroll the grid vertically if there are still
-     * channels to be shown in the desired direction.
+     * This is important because we scroll the grid horizontally if there are still
+     * programs to be shown in the desired direction.
      */
     override fun onRequestChildFocus(oldFocus: View?, newFocus: View?) {
         if (oldFocus != null && newFocus != null) {
-            val selectionRowOffset = selectionRow * rowHeight
-            if (oldFocus.top < newFocus.top) {
-                // Selection moves downwards
-                // Adjust scroll offset to be at the bottom of the target row and to expand up. This
-                // will set the scroll target to be one row height up from its current position.
-                programGuideGrid.windowAlignmentOffset = selectionRowOffset + rowHeight
+            val selectionRowOffset = selectionColumn * columnWidth
+            if (oldFocus.left < newFocus.left) {
+                // Selection moves to the right
+                // Adjust scroll offset to be at the right of the target column and to expand left. This
+                // will set the scroll target to be one column width left from its current position.
+                programGuideGrid.windowAlignmentOffset = selectionRowOffset + columnWidth
                 programGuideGrid.itemAlignmentOffsetPercent = 100f
-            } else if (oldFocus.top > newFocus.top) {
-                // Selection moves upwards
-                // Adjust scroll offset to be at the top of the target row and to expand down. This
-                // will set the scroll target to be one row height down from its current position.
+            } else if (oldFocus.left > newFocus.left) {
+                // Selection moves to the left
+                // Adjust scroll offset to be at the left of the target column and to expand right. This
+                // will set the scroll target to be one column width right from its current position.
                 programGuideGrid.windowAlignmentOffset = selectionRowOffset
                 programGuideGrid.itemAlignmentOffsetPercent = 0f
             }
