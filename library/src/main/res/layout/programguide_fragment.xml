@@ -23,18 +23,6 @@
     android:background="@color/programguide_header_background"
     tools:ignore="Overdraw">
 
-    <Button
-        android:id="@+id/programguide_jump_to_live"
-        style="@style/ProgramGuide.Button.JumpToLive"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="@dimen/programguide_filter_spacing"
-        android:text="@string/programguide_button_jump_to_live"
-        android:visibility="gone"
-        app:layout_constraintBottom_toTopOf="@id/programguide_time_row"
-        app:layout_constraintStart_toEndOf="@id/programguide_time_of_day_filter"
-        app:layout_constraintTop_toTopOf="@id/programguide_top_margin" />
-
     <Space
         android:id="@+id/programguide_menu_visible_margin"
         android:layout_width="0dp"
@@ -107,7 +95,7 @@
         app:layout_constraintBottom_toTopOf="@id/bottom_detail"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@id/programguide_time_row"
-        app:layout_constraintTop_toBottomOf="@id/programguide_day_filter"
+        app:layout_constraintTop_toTopOf="parent"
         />
 
     <View
@@ -174,25 +162,6 @@
         app:layout_constraintTop_toBottomOf="@id/programguide_current_date"
         tools:alpha="1"
         tools:listitem="@layout/programguide_item_time" />
-
-    <include
-        android:id="@+id/programguide_day_filter"
-        layout="@layout/programguide_item_filter"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="@dimen/programguide_page_left_padding"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
-
-    <include
-        android:id="@+id/programguide_time_of_day_filter"
-        layout="@layout/programguide_item_filter"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="@dimen/programguide_filter_spacing"
-        app:layout_constraintBottom_toTopOf="@id/background"
-        app:layout_constraintStart_toEndOf="@id/programguide_day_filter"
-        app:layout_constraintTop_toTopOf="parent" />
 
     <include
         android:id="@+id/programguide_current_date"

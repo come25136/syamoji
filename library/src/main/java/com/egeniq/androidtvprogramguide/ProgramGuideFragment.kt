@@ -30,7 +30,6 @@ import android.widget.TextView
 import android.widget.ViewAnimator
 import androidx.annotation.LayoutRes
 import androidx.annotation.MainThread
-import androidx.appcompat.app.AlertDialog
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.constraintlayout.widget.ConstraintSet
 import androidx.fragment.app.Fragment
@@ -43,7 +42,6 @@ import com.egeniq.androidtvprogramguide.entity.ProgramGuideChannel
 import com.egeniq.androidtvprogramguide.entity.ProgramGuideSchedule
 import com.egeniq.androidtvprogramguide.item.ProgramGuideItemView
 import com.egeniq.androidtvprogramguide.row.ProgramGuideRowAdapter
-import com.egeniq.androidtvprogramguide.row.ProgramGuideRowGridView
 import com.egeniq.androidtvprogramguide.timeline.ProgramGuideTimeListAdapter
 import com.egeniq.androidtvprogramguide.timeline.ProgramGuideTimelineRow
 import com.egeniq.androidtvprogramguide.util.FilterOption
@@ -131,10 +129,7 @@ abstract class ProgramGuideFragment<T> : Fragment(), ProgramGuideManager.Listene
     override val programGuideGrid get() = view?.findViewById<ProgramGuideGridView<T>>(R.id.programguide_grid)!!
     private val timeRow get() = view?.findViewById<ProgramGuideTimelineRow>(R.id.programguide_time_row)
     private val currentDateView get() = view?.findViewById<TextView>(R.id.programguide_current_date)
-    private val jumpToLive get() = view?.findViewById<TextView>(R.id.programguide_jump_to_live)
     private val currentTimeIndicator get() = view?.findViewById<FrameLayout>(R.id.programguide_current_time_indicator)
-    private val timeOfDayFilter get() = view?.findViewById<View>(R.id.programguide_time_of_day_filter)
-    private val dayFilter get() = view?.findViewById<View>(R.id.programguide_day_filter)
     private val focusCatcher get() = view?.findViewById<View>(R.id.programguide_focus_catcher)
     private val contentAnimator get() = view?.findViewById<ViewAnimator>(R.id.programguide_content_animator)
     private val errorMessage get() = view?.findViewById<TextView>(R.id.programguide_error_message)
@@ -270,30 +265,6 @@ abstract class ProgramGuideFragment<T> : Fragment(), ProgramGuideManager.Listene
                     )
                 }
             }
-        val dayFilter = view.findViewById<View>(R.id.programguide_day_filter)
-        dayFilter.findViewById<TextView>(R.id.programguide_filter_title).text =
-            dayFilterOptions[currentlySelectedFilterIndex].displayTitle
-        dayFilter.setOnClickListener { filterView ->
-            AlertDialog.Builder(filterView.context)
-                .setTitle(R.string.programguide_day_selector_title)
-                .setSingleChoiceItems(
-                    dayFilterOptions.map { it.displayTitle }.toTypedArray(),
-                    currentlySelectedFilterIndex
-                ) { dialogInterface, position ->
-                    currentlySelectedFilterIndex = position
-                    dialogInterface.dismiss()
-
-                    dayFilter.findViewById<TextView>(R.id.programguide_filter_title).text =
-                        dayFilterOptions[currentlySelectedFilterIndex].displayTitle
-                    didScrollToBestProgramme = false
-                    setJumpToLiveButtonVisible(false)
-                    currentDate =
-                        LocalDate.parse(dayFilterOptions[position].value, FILTER_DATE_FORMATTER)
-                    requestingProgramGuideFor(currentDate)
-                }
-                .show()
-
-        }
 
         // Time of day filter
         val isItMorning = now.hour < MORNING_UNTIL_HOUR
@@ -324,24 +295,6 @@ abstract class ProgramGuideFragment<T> : Fragment(), ProgramGuideManager.Listene
                 isItAfternoon -> 1
                 else -> 2
             }
-        }
-        val timeOfDayFilter = view.findViewById<View>(R.id.programguide_time_of_day_filter)
-        timeOfDayFilter.findViewById<TextView>(R.id.programguide_filter_title).text =
-            timeOfDayFilterOptions[currentlySelectedTimeOfDayFilterIndex].displayTitle
-        timeOfDayFilter?.setOnClickListener {
-            AlertDialog.Builder(it.context)
-                .setTitle(R.string.programguide_day_time_selector_title)
-                .setSingleChoiceItems(
-                    timeOfDayFilterOptions.map { option -> option.displayTitle }.toTypedArray(),
-                    currentlySelectedTimeOfDayFilterIndex
-                ) { dialogInterface, position ->
-                    currentlySelectedTimeOfDayFilterIndex = position
-                    timeOfDayFilter.findViewById<TextView>(R.id.programguide_filter_title).text =
-                        timeOfDayFilterOptions[currentlySelectedTimeOfDayFilterIndex].displayTitle
-                    dialogInterface.dismiss()
-                    autoScrollToBestProgramme(useTimeOfDayFilter = true)
-                }
-                .show()
         }
     }
 
@@ -483,21 +436,6 @@ abstract class ProgramGuideFragment<T> : Fragment(), ProgramGuideManager.Listene
                 R.layout.programguide_item_time,
                 resources.getInteger(R.integer.programguide_max_recycled_view_pool_time_row_item)
             )
-        }
-        val jumpToLive = view.findViewById<View>(R.id.programguide_jump_to_live)!!
-        jumpToLive.setOnClickListener {
-            val currentChannelId: String?
-            val gridView = view.findViewById<ProgramGuideGridView<T>>(R.id.programguide_grid)
-            if (gridView != null && gridView.hasFocus()) {
-                val focusedView = gridView.findFocus() as? ProgramGuideItemView<*>
-                val rowView = focusedView?.parent as? ProgramGuideRowGridView
-                val channel = rowView?.channel
-                currentChannelId = channel?.id
-                isJumpingGridInTime = true
-            } else {
-                currentChannelId = null
-            }
-            autoScrollToBestProgramme(specificChannelId = currentChannelId)
         }
     }
 
@@ -772,15 +710,6 @@ abstract class ProgramGuideFragment<T> : Fragment(), ProgramGuideManager.Listene
         }
         if (currentlySelectedTimeOfDayFilterIndex != selectedItemPosition) {
             currentlySelectedTimeOfDayFilterIndex = selectedItemPosition
-            val displayText = getString(
-                listOf(
-                    R.string.programguide_part_of_day_morning,
-                    R.string.programguide_part_of_day_afternoon,
-                    R.string.programguide_part_of_day_evening
-                )[selectedItemPosition]
-            )
-            timeOfDayFilter?.findViewById<TextView>(R.id.programguide_filter_title)?.text =
-                displayText
         }
     }
 
