@@ -16,21 +16,17 @@
 
 <!-- The background of header_column will be programmatically changed
      in order to support rounded corners. -->
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/programguide_channel_container"
     android:layout_width="@dimen/programguide_channel_column_width"
     android:layout_height="@dimen/programguide_program_row_height_with_empty_space"
     android:focusable="false"
     android:background="@drawable/programguide_channel_item_background"
-    android:paddingLeft="@dimen/programguide_page_left_padding">
-
-    <TextView
-        android:id="@+id/programguide_channel_name"
-        style="@style/ProgramGuide.Text.id.come25136.syamoji.Channel"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        tools:text="NPO Zappelin Xtra" />
+    android:padding="7dp"
+    android:orientation="horizontal"
+    android:gravity="center"
+    >
 
     <ImageView
         android:id="@+id/programguide_channel_logo"
@@ -39,4 +35,11 @@
         android:visibility="gone"
         tools:visibility="visible" />
 
-</FrameLayout>
+    <TextView
+        android:id="@+id/programguide_channel_name"
+        style="@style/ProgramGuide.Image.id.come25136.syamoji.Channel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        tools:text="NPO Zappelin Xtra"/>
+
+</LinearLayout>
