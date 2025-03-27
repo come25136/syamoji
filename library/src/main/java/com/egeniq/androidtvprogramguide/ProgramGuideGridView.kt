@@ -27,6 +27,7 @@ import androidx.core.view.children
 import androidx.leanback.widget.HorizontalGridView
 import com.egeniq.androidtvprogramguide.entity.ProgramGuideChannel
 import com.egeniq.androidtvprogramguide.entity.ProgramGuideSchedule
+import com.egeniq.androidtvprogramguide.item.Program
 import com.egeniq.androidtvprogramguide.item.ProgramGuideItemView
 import com.egeniq.androidtvprogramguide.row.ProgramGuideRowGridView
 import com.egeniq.androidtvprogramguide.util.OnRepeatedKeyInterceptListener
@@ -35,7 +36,7 @@ import java.util.concurrent.TimeUnit
 import kotlin.math.max
 import kotlin.math.min
 
-class ProgramGuideGridView<T>(context: Context, attrs: AttributeSet?, defStyle: Int) :
+class ProgramGuideGridView<T:Program>(context: Context, attrs: AttributeSet?, defStyle: Int) :
     HorizontalGridView(context, attrs, defStyle) {
 
     constructor(context: Context, attrs: AttributeSet?) : this(context, attrs, 0)

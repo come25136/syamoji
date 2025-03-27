@@ -17,19 +17,39 @@
 package com.egeniq.androidtvprogramguide.item
 
 import android.content.Context
+import android.graphics.drawable.GradientDrawable
+import android.text.Spanned
 import android.util.AttributeSet
 import android.view.View
 import android.widget.FrameLayout
 import android.widget.ProgressBar
 import android.widget.TextView
 import com.egeniq.androidtvprogramguide.R
+import com.egeniq.androidtvprogramguide.entity.ProgramGuideChannel
 import com.egeniq.androidtvprogramguide.entity.ProgramGuideSchedule
 import com.egeniq.androidtvprogramguide.util.ProgramGuideUtil
+import java.net.URL
 import kotlin.math.max
 import kotlin.math.min
 
+data class Channel(
+    override val id: String, // Mirakurun内部ではnetworkId + serviceIdとして扱われているもの
+    val group: String, // GR, BS, CS
+    override val name: Spanned,
+    override val logoUrl: String?, // チャンネルロゴ
+    val streamUrl: URL
+) : ProgramGuideChannel
 
-class ProgramGuideItemView<T> : FrameLayout {
+data class Program(
+    val id: Long,
+    val title: String,
+    val description: String,
+    val metadata: String,
+    val categories: Array<String>,
+    val channel: Channel
+)
+
+class ProgramGuideItemView<T : Program> : FrameLayout {
     constructor(context: Context) : this(context, null)
     constructor(context: Context, attrs: AttributeSet?) : this(context, attrs, 0)
     constructor(context: Context, attrs: AttributeSet?, defStyleAttr: Int) : super(
@@ -48,13 +68,63 @@ class ProgramGuideItemView<T> : FrameLayout {
     private var preventParentRelayout = false
 
     private val titleView: TextView
+    private val descriptionView: TextView
     private val progressView: ProgressBar
 
     init {
         View.inflate(context, R.layout.programguide_item_program, this)
 
         titleView = findViewById(R.id.title)
+        descriptionView = findViewById(R.id.description)
         progressView = findViewById(R.id.progress)
+
+        // フォーカス状態の変更を監視
+        setOnFocusChangeListener { _, hasFocus ->
+            updateBackgroundForFocus(hasFocus)
+        }
+    }
+
+    private fun updateBackgroundForFocus(hasFocus: Boolean) {
+        var category =
+            schedule?.program?.categories?.firstOrNull()?.split(Regex("[／\\s・]"))?.firstOrNull()
+        val backgroundColor = if (hasFocus) {
+            when (category) {
+                "sports" -> R.color.programguide_sports_focused_color
+                "news" -> R.color.programguide_news_focused_color
+                else -> R.color.programguide_default_focused_color
+            }
+        } else {
+            when (category) {
+                "ドキュメンタリー" -> R.color.programguide_documentary_color
+                "スポーツ" -> R.color.programguide_sports_color
+                "アニメ" -> R.color.programguide_anime_color
+                "ドラマ" -> R.color.programguide_drama_color
+                "バラエティ" -> R.color.programguide_variety_color
+                "情報" -> R.color.programguide_info_color
+                "趣味" -> R.color.programguide_hobby_color
+                "ニュース" -> R.color.programguide_news_color
+                "劇場" -> R.color.programguide_theater_color
+                "音楽" -> R.color.programguide_music_color
+                "映画" -> R.color.programguide_movie_color
+                "福祉" -> R.color.programguide_welfare_color
+                else -> R.color.programguide_default_color
+            }
+        }
+
+        // ボーダー付きの背景を作成
+        val borderColor = if (hasFocus) {
+            resources.getColor(R.color.programguide_border_focused_color, context.theme)
+        } else {
+            resources.getColor(R.color.programguide_border_default_color, context.theme)
+        }
+        val borderWidth = resources.getDimensionPixelSize(R.dimen.programguide_item_border_width)
+
+        val drawable = GradientDrawable().apply {
+            setColor(resources.getColor(backgroundColor, context.theme))
+            setStroke(borderWidth, borderColor)
+            cornerRadius = resources.getDimension(R.dimen.programguide_gap_item_corner_radius)
+        }
+        background = drawable
     }
 
     fun setValues(
@@ -70,8 +140,6 @@ class ProgramGuideItemView<T> : FrameLayout {
             val spacing = resources.getDimensionPixelSize(R.dimen.programguide_item_spacing)
             layoutParams.height =
                 scheduleItem.height - 2 * spacing // Here we subtract the spacing, otherwise the calculations will be wrong at other places
-            // If the programme is very short, and the table width is also reduced, or the gap is enlarged,
-            // there is an edge case that we could go into negative widths. This fixes that.
             if (layoutParams.height < 1) {
                 layoutParams.height = 1
             }
@@ -83,14 +151,17 @@ class ProgramGuideItemView<T> : FrameLayout {
             setBackgroundResource(R.drawable.programguide_gap_item_background)
             isClickable = false
         } else {
-            setBackgroundResource(R.drawable.programguide_item_program_background)
+            // 初期背景を設定
+            updateBackgroundForFocus(hasFocus = false)
             isClickable = scheduleItem.isClickable
         }
         title =
             if (title?.isEmpty() == true)
                 resources.getString(R.string.programguide_title_no_program) else title
 
-        updateText(title)
+        titleView.text = title
+        descriptionView.text = schedule?.program?.description
+
         initProgress(
             ProgramGuideUtil.convertMillisToPixel(
                 startMillis = scheduleItem.startsAtMillis,
@@ -108,12 +179,7 @@ class ProgramGuideItemView<T> : FrameLayout {
             MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED)
         )
         itemTextHeight = titleView.measuredHeight - titleView.paddingTop - titleView.paddingBottom
-        // Maximum width for us to use a ripple
         maxHeightForRipple = ProgramGuideUtil.convertMillisToPixel(fromUtcMillis, toUtcMillis)
-    }
-
-    private fun updateText(title: String?) {
-        titleView.text = title
     }
 
     private fun initProgress(width: Int) {
@@ -126,7 +192,7 @@ class ProgramGuideItemView<T> : FrameLayout {
             if (it.isCurrentProgram.not()) {
                 progressView.visibility = View.GONE
             } else {
-                progressView.visibility = View.VISIBLE
+//                progressView.visibility = View.VISIBLE
                 progressView.progress =
                     ProgramGuideUtil.convertMillisToPixel(it.startsAtMillis, now)
             }
@@ -179,23 +245,23 @@ class ProgramGuideItemView<T> : FrameLayout {
                 // The size of this view is kept, no need to tell parent.
                 preventParentRelayout = true
 
-                titleView.setPaddingRelative(
-                    0,
-                    topPadding + staticItemPadding,
-                    0,
-                    bottomPadding + staticItemPadding,
-                )
+//                titleView.setPaddingRelative(
+//                    0,
+//                    topPadding + staticItemPadding,
+//                    0,
+//                    bottomPadding + staticItemPadding,
+//                )
                 preventParentRelayout = false
             }
         } else {
             if (topPadding + staticItemPadding != paddingBottom || bottomPadding + staticItemPadding != paddingBottom) {
                 // In this case, we need to tell the parent to do a relayout, RTL is a bit more complicated, it seems.
-                titleView.setPaddingRelative(
-                    0,
-                    bottomPadding + staticItemPadding,
-                    0,
-                    topPadding + staticItemPadding,
-                )
+//                titleView.setPaddingRelative(
+//                    0,
+//                    bottomPadding + staticItemPadding,
+//                    0,
+//                    topPadding + staticItemPadding,
+//                )
             }
         }
     }

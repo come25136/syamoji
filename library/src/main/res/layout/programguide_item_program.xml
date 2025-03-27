@@ -18,7 +18,7 @@
 <merge xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
+    android:layout_height="match_parent"
     android:layout_margin="@dimen/picker_item_spacing"
     android:background="@drawable/programguide_item_program_background"
     android:clickable="true"
@@ -27,13 +27,26 @@
     tools:layout_margin="20dp"
     tools:parentTag="android.widget.FrameLayout">
 
-    <TextView
-        android:id="@+id/title"
-        style="@style/ProgramGuide.Text.Program.Title"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:gravity="top"
-        tools:text="Item title" />
+        android:orientation="vertical"
+        android:padding="3dp">
+
+        <TextView
+            android:id="@+id/title"
+            style="@style/ProgramGuide.Text.Program.Title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            tools:text="Item title" />
+
+        <TextView
+            android:id="@+id/description"
+            style="@style/ProgramGuide.Text.Program.Description"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            tools:text="Item description" />
+    </LinearLayout>
 
     <ProgressBar
         android:id="@+id/progress"

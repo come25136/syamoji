@@ -15,11 +15,11 @@
   ~ limitations under the License.
   -->
 
-<com.egeniq.androidtvprogramguide.item.ProgramGuideItemView
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<com.egeniq.androidtvprogramguide.item.ProgramGuideItemView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/border"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
+    android:layout_height="match_parent"
     android:layout_margin="@dimen/programguide_item_spacing"
     android:background="@drawable/programguide_item_program_background"
     android:clickable="true"

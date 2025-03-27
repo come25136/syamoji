@@ -26,6 +26,7 @@ import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
+import com.egeniq.androidtvprogramguide.ProgramGuideFragment
 import com.egeniq.androidtvprogramguide.ProgramGuideHolder
 import com.egeniq.androidtvprogramguide.ProgramGuideListAdapter
 import com.egeniq.androidtvprogramguide.ProgramGuideManager
@@ -33,14 +34,13 @@ import com.egeniq.androidtvprogramguide.R
 import com.egeniq.androidtvprogramguide.entity.ProgramGuideChannel
 import com.egeniq.androidtvprogramguide.entity.ProgramGuideSchedule
 import com.egeniq.androidtvprogramguide.timeline.ProgramGuideTimelineRow
-import java.util.*
 
 /**
  * Adapts the [ProgramGuideListAdapter] list to the body of the program guide table.
  */
 internal class ProgramGuideRowAdapter(
     private val context: Context,
-    private val programGuideHolder: ProgramGuideHolder<*>,
+    private val programGuideHolder: ProgramGuideFragment,
     private val timelineRow: ProgramGuideTimelineRow?,
     private val canFocusChannel: Boolean
 ) :

@@ -24,9 +24,10 @@ import android.view.ViewGroup
 import android.view.ViewOutlineProvider
 import androidx.recyclerview.widget.RecyclerView
 import com.egeniq.androidtvprogramguide.entity.ProgramGuideSchedule
+import com.egeniq.androidtvprogramguide.item.Program
 import com.egeniq.androidtvprogramguide.item.ProgramGuideItemView
 
-class ProgramGuideListAdapter<T>(
+class ProgramGuideListAdapter<T:Program>(
     res: Resources,
     private val programGuideFragment: ProgramGuideHolder<T>,
     private val channelIndex: Int
@@ -101,7 +102,7 @@ class ProgramGuideListAdapter<T>(
         return ProgramItemViewHolder(itemView)
     }
 
-    class ProgramItemViewHolder<R>(itemView: View) : RecyclerView.ViewHolder(itemView) {
+    class ProgramItemViewHolder<R:Program>(itemView: View) : RecyclerView.ViewHolder(itemView) {
         private var programGuideItemView: ProgramGuideItemView<R>? = null
 
         init {

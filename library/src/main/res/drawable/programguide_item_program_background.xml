@@ -19,18 +19,18 @@
     <item android:state_focused="true">
         <shape>
             <solid android:color="@color/programguide_selected_schedule_color" />
-            <corners android:radius="2dp" />
+            <corners android:radius="@dimen/programguide_gap_item_corner_radius" />
         </shape>
     </item>
     <item android:state_activated="true">
         <shape>
-            <corners android:radius="2dp"/>
+            <corners android:radius="@dimen/programguide_gap_item_corner_radius"/>
             <solid android:color="@color/programguide_default_schedule_color"/>
         </shape>
     </item>
     <item>
         <shape>
-            <corners android:radius="2dp"/>
+            <corners android:radius="@dimen/programguide_gap_item_corner_radius"/>
             <solid android:color="@color/programguide_past_schedule_color"/>
         </shape>
     </item>

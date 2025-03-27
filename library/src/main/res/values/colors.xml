@@ -16,6 +16,41 @@
   -->
 
 <resources>
+    <color name="programguide_border_focused_color">#202020</color>
+    <color name="programguide_border_default_color">#202020</color>
+
+    <color name="programguide_sports_focused_color">#202020</color>
+    <color name="programguide_news_focused_color">#202020</color>
+    <color name="programguide_default_focused_color">#202020</color>
+
+    <!-- <color name="programguide_documentary_color">#40b6bd</color>
+    <color name="programguide_sports_color">#40b6bd</color>
+    <color name="programguide_anime_color">#eb8242</color>
+    <color name="programguide_drama_color">#d88686</color>
+    <color name="programguide_variety_color">#cf56a1</color>
+    <color name="programguide_info_color">#59b1c7</color>
+    <color name="programguide_hobby_color">#40b6bd</color>
+    <color name="programguide_news_color">#40b6bd</color>
+    <color name="programguide_theater_color">#83a993</color>
+    <color name="programguide_music_color">#7fa534</color>
+    <color name="programguide_movie_color">#d85b2a</color>
+    <color name="programguide_welfare_color">#46b3e6</color>
+    <color name="programguide_default_color">#000000</color> -->
+
+    <color name="programguide_documentary_color">#4a9d9f</color>
+    <color name="programguide_sports_color">#4a9d9f</color>
+    <color name="programguide_anime_color">#d87f53</color>
+    <color name="programguide_drama_color">#c07a7a</color>
+    <color name="programguide_variety_color">#be5a93</color>
+    <color name="programguide_info_color">#5a97a0</color>
+    <color name="programguide_hobby_color">#4a9d9f</color>
+    <color name="programguide_news_color">#4a9d9f</color>
+    <color name="programguide_theater_color">#6e8c74</color>
+    <color name="programguide_music_color">#7a8f44</color>
+    <color name="programguide_movie_color">#c36744</color>
+    <color name="programguide_welfare_color">#4d96a9</color>
+    <color name="programguide_default_color">#383838</color>
+
     <color name="programguide_header_background">#202020</color>
     <color name="programguide_content_background">#000000</color>
     <color name="programguide_footer_background">#202020</color>

@@ -18,8 +18,9 @@ package com.egeniq.androidtvprogramguide
 
 import com.egeniq.androidtvprogramguide.entity.ProgramGuideChannel
 import com.egeniq.androidtvprogramguide.entity.ProgramGuideSchedule
+import com.egeniq.androidtvprogramguide.item.Program
 
-interface ProgramGuideHolder<T> {
+interface ProgramGuideHolder<T:Program> {
     val programGuideGrid: ProgramGuideGridView<T>
     val programGuideManager: ProgramGuideManager<T>
 

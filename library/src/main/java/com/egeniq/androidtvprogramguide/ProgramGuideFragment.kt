@@ -40,6 +40,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.egeniq.androidtvprogramguide.entity.ProgramGuideChannel
 import com.egeniq.androidtvprogramguide.entity.ProgramGuideSchedule
+import com.egeniq.androidtvprogramguide.item.Program
 import com.egeniq.androidtvprogramguide.item.ProgramGuideItemView
 import com.egeniq.androidtvprogramguide.row.ProgramGuideRowAdapter
 import com.egeniq.androidtvprogramguide.timeline.ProgramGuideTimeListAdapter
@@ -57,9 +58,9 @@ import org.threeten.bp.temporal.ChronoUnit
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 
-abstract class ProgramGuideFragment<T> : Fragment(), ProgramGuideManager.Listener,
+abstract class ProgramGuideFragment: Fragment(), ProgramGuideManager.Listener,
     ProgramGuideGridView.ChildFocusListener,
-    ProgramGuideGridView.ScheduleSelectionListener<T>, ProgramGuideHolder<T> {
+    ProgramGuideGridView.ScheduleSelectionListener<Program>, ProgramGuideHolder<Program> {
 
     companion object {
         private val HOUR_IN_MILLIS = TimeUnit.HOURS.toMillis(1)
@@ -97,7 +98,7 @@ abstract class ProgramGuideFragment<T> : Fragment(), ProgramGuideManager.Listene
     // Synchronizes the scrolls of the RecyclerViews. This is required if you expect pointer events in your application.
     // Normally this would not be possible on Android TV (although the user could hook up a mouse via USB), and since this
     // features requires extra listeners and manual scrolling on the views, which reduces performance, this feature is turned off by default.
-    protected open val SCROLL_SYNCING = false
+    protected open val SCROLL_SYNCING = true
 
     @Suppress("LeakingThis")
     protected open val DATE_WITH_DAY_FORMATTER: DateTimeFormatter =
@@ -126,7 +127,7 @@ abstract class ProgramGuideFragment<T> : Fragment(), ProgramGuideManager.Listene
 
     private var created = false
 
-    override val programGuideGrid get() = view?.findViewById<ProgramGuideGridView<T>>(R.id.programguide_grid)!!
+    override val programGuideGrid get() = view?.findViewById<ProgramGuideGridView<Program>>(R.id.programguide_grid)!!
     private val timeRow get() = view?.findViewById<ProgramGuideTimelineRow>(R.id.programguide_time_row)
     private val currentDateView get() = view?.findViewById<TextView>(R.id.programguide_current_date)
     private val currentTimeIndicator get() = view?.findViewById<FrameLayout>(R.id.programguide_current_time_indicator)
@@ -137,7 +138,7 @@ abstract class ProgramGuideFragment<T> : Fragment(), ProgramGuideManager.Listene
     private var timelineStartMillis = 0L
     private var disableScrollSyncUntilOffset: Int? = null
 
-    override val programGuideManager = ProgramGuideManager<T>()
+    override val programGuideManager = ProgramGuideManager<Program>()
 
     private var gridHeight = 0
     private var heightPerHour = 0
@@ -187,13 +188,13 @@ abstract class ProgramGuideFragment<T> : Fragment(), ProgramGuideManager.Listene
      *  Called when the user has selected a schedule from the grid.
      *  When no schedule is selected (such as when navigating outside the grid), the parameter will be null.
      */
-    abstract fun onScheduleSelected(programGuideSchedule: ProgramGuideSchedule<T>?)
+    abstract fun onScheduleSelected(programGuideSchedule: ProgramGuideSchedule<Program>?)
 
     /**
      * Called when the user has clicked on a schedule.
      * The schedule parameter contains all the info you need for taking an action.
      */
-    abstract fun onScheduleClicked(programGuideSchedule: ProgramGuideSchedule<T>)
+    abstract fun onScheduleClicked(programGuideSchedule: ProgramGuideSchedule<Program>)
 
     /**
      * Called when the user has selected a channel.
@@ -311,7 +312,7 @@ abstract class ProgramGuideFragment<T> : Fragment(), ProgramGuideManager.Listene
     /**
      * Sets the selected schedule internally.
      */
-    private fun setSelectedSchedule(schedule: ProgramGuideSchedule<T>?) {
+    private fun setSelectedSchedule(schedule: ProgramGuideSchedule<Program>?) {
         onScheduleSelected(schedule)
     }
 
@@ -387,7 +388,7 @@ abstract class ProgramGuideFragment<T> : Fragment(), ProgramGuideManager.Listene
                 timelineStartMillis + viewportMillis
             )
         }
-        view.findViewById<ProgramGuideGridView<T>>(R.id.programguide_grid)?.let {
+        view.findViewById<ProgramGuideGridView<Program>>(R.id.programguide_grid)?.let {
             it.viewTreeObserver.addOnGlobalLayoutListener(object :
                 ViewTreeObserver.OnGlobalLayoutListener {
                 override fun onGlobalLayout() {
@@ -469,28 +470,8 @@ abstract class ProgramGuideFragment<T> : Fragment(), ProgramGuideManager.Listene
         val constraint = ConstraintSet()
         val constraintRoot =
             view?.findViewById<ConstraintLayout>(R.id.programguide_constraint_root) ?: return
-        val topMargin = view?.findViewById<View>(R.id.programguide_top_margin) ?: return
-        val menuVisibleMargin =
-            view?.findViewById<View>(R.id.programguide_menu_visible_margin) ?: return
         constraint.clone(constraintRoot)
 
-        if (visible) {
-            constraint.clear(topMargin.id, ConstraintSet.TOP)
-            constraint.connect(
-                topMargin.id,
-                ConstraintSet.TOP,
-                menuVisibleMargin.id,
-                ConstraintSet.BOTTOM
-            )
-        } else {
-            constraint.clear(topMargin.id, ConstraintSet.TOP)
-            constraint.connect(
-                topMargin.id,
-                ConstraintSet.TOP,
-                ConstraintSet.PARENT_ID,
-                ConstraintSet.TOP
-            )
-        }
         constraint.applyTo(constraintRoot)
     }
 
@@ -608,7 +589,7 @@ abstract class ProgramGuideFragment<T> : Fragment(), ProgramGuideManager.Listene
     @MainThread
     fun setData(
         newChannels: List<ProgramGuideChannel>,
-        newChannelEntries: Map<String, List<ProgramGuideSchedule<T>>>,
+        newChannelEntries: Map<String, List<ProgramGuideSchedule<Program>>>,
         selectedDate: LocalDate
     ) {
         programGuideManager.setData(newChannels, newChannelEntries, selectedDate, DISPLAY_TIMEZONE)
@@ -818,14 +799,14 @@ abstract class ProgramGuideFragment<T> : Fragment(), ProgramGuideManager.Listene
     /**
      * The gridview calls this method on the fragment when the focus changes on one of their child changes.
      */
-    override fun onSelectionChanged(schedule: ProgramGuideSchedule<T>?) {
+    override fun onSelectionChanged(schedule: ProgramGuideSchedule<Program>?) {
         setSelectedSchedule(schedule)
     }
 
     /**
      * This method is called from the ProgramGuideListAdapter, when the OnClickListener is triggered.
      */
-    override fun onScheduleClickedInternal(schedule: ProgramGuideSchedule<T>) {
+    override fun onScheduleClickedInternal(schedule: ProgramGuideSchedule<Program>) {
         ProgramGuideUtil.lastClickedSchedule = schedule
         onScheduleClicked(schedule)
     }
@@ -926,7 +907,7 @@ abstract class ProgramGuideFragment<T> : Fragment(), ProgramGuideManager.Listene
      * If there are multiple programs with the same ID, only the first one will be updated (you should have unique IDs!).
      *
      */
-    fun updateProgram(program: ProgramGuideSchedule<T>) {
+    fun updateProgram(program: ProgramGuideSchedule<Program>) {
         val replacement = programGuideManager.updateProgram(program)
         if (replacement != null) {
             // Now find it in the grid, and update that single
