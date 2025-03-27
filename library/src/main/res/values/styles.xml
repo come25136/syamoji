@@ -109,7 +109,6 @@
         <item name="android:gravity">start|center_vertical</item>
         <item name="android:textDirection">locale</item>
         <item name="android:textAlignment">viewStart</item>
-        <item name="android:maxLines">6</item>
         <item name="android:padding">@dimen/programguide_item_padding</item>
         <item name="android:duplicateParentState">true</item>
         <item name="android:singleLine">false</item>
