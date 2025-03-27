@@ -49,7 +49,7 @@
     <color name="programguide_music_color">#7a8f44</color>
     <color name="programguide_movie_color">#c36744</color>
     <color name="programguide_welfare_color">#4d96a9</color>
-    <color name="programguide_default_color">#383838</color>
+    <color name="programguide_default_color">#000000</color>
 
     <color name="programguide_header_background">#202020</color>
     <color name="programguide_content_background">#000000</color>
