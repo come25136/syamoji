@@ -114,7 +114,9 @@ class EpgFragment : ProgramGuideFragment() {
                         .subscribeOn(Schedulers.io())
                         .observeOn(Schedulers.single())
                         .map { tvData ->
-                            tvData.programmes.mapIndexed { i, tvDataProgram ->
+                            tvData.programmes.filter {
+                                channelsById.containsKey(it.channel)
+                            }.mapIndexed { i, tvDataProgram ->
                                 val program = Program(
                                     (channelsById[tvDataProgram.channel]!!.id + (tvDataProgram.start.toEpochSecond() / 60).toString()).toLong(),
                                     tvDataProgram.title,
