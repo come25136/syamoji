@@ -381,7 +381,7 @@ abstract class ProgramGuideFragment: Fragment(), ProgramGuideManager.Listener,
                 resources.getDimensionPixelSize(R.dimen.programguide_grid_height) * HOUR_IN_MILLIS / heightPerHour
             timelineStartMillis = ProgramGuideUtil.floorTime(
                 System.currentTimeMillis() - MIN_DURATION_FROM_START_TIME_TO_CURRENT_TIME,
-                HALF_HOUR_IN_MILLIS
+                HOUR_IN_MILLIS
             )
             programGuideManager.updateInitialTimeRange(
                 timelineStartMillis,
@@ -708,7 +708,7 @@ abstract class ProgramGuideFragment: Fragment(), ProgramGuideManager.Listener,
     private fun updateTimeline() {
         timelineStartMillis = ProgramGuideUtil.floorTime(
             programGuideManager.getStartTime() - MIN_DURATION_FROM_START_TIME_TO_CURRENT_TIME,
-            HALF_HOUR_IN_MILLIS
+            HOUR_IN_MILLIS
         )
         val timelineDifference = programGuideManager.getStartTime() - timelineStartMillis
         timelineAdjustmentPixels = ProgramGuideUtil.convertMillisToPixel(timelineDifference)

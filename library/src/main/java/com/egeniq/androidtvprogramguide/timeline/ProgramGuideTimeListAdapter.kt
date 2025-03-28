@@ -40,7 +40,7 @@ class ProgramGuideTimeListAdapter(
 ) : RecyclerView.Adapter<ProgramGuideTimeListAdapter.TimeViewHolder>() {
 
     companion object {
-        private val TIME_UNIT_MS = TimeUnit.MINUTES.toMillis(30)
+        private val TIME_UNIT_MS = TimeUnit.MINUTES.toMillis(60)
         private var rowHeaderOverlapping: Int = 0
         private val TIME_FORMATTER = DateTimeFormatter.ofPattern("H:mm")
     }

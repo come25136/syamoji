@@ -1,5 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!--
+<?xml version="1.0" encoding="utf-8"?><!--
   ~ Copyright (c) 2020, Egeniq
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,14 +23,13 @@
     <View
         android:id="@+id/top"
         android:layout_width="match_parent"
-        android:layout_height="2px"
+        android:layout_height="2.5dp"
         android:layout_gravity="center"
-        android:background="@color/programguide_time_indicator_line"
-        tools:ignore="PxUsage" />
+        android:background="@color/programguide_time_indicator_line" />
 
     <View
-        android:layout_width="@dimen/programguide_current_time_indicator_left_height"
-        android:layout_height="7.5dp"
+        android:layout_width="8dp"
+        android:layout_height="11dp"
         android:background="@drawable/programguide_current_time_indicator_triangle"
         android:rotation="-90" />
 
