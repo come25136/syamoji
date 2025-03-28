@@ -1,5 +1,5 @@
 [versions]
-agp = "8.6.0"
+agp = "8.8.0"
 appcompatVersion = "1.7.0"
 danmakuflamemaster = "0.4.5"
 exoplayer = "2.19.1"
