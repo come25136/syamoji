@@ -21,7 +21,7 @@ data class Comment(
     val color: Int = Color.WHITE,
     var x: Float = 0f,
     var y: Float = 0f,
-    var velocity: Float = 2.5f,
+    var velocity: Float = 0f,
     var lane: Int = 0, // 上から0インデックス
     var width: Float = 0f,
     var bitmap: Bitmap? = null
@@ -83,6 +83,10 @@ class CommentRender @JvmOverloads constructor(
             val textBitmap = createTextBitmap(comment.text, paint)
             comment.bitmap = textBitmap
             comment.x = width.toFloat()
+
+            val moveDuration = 5 // 画面右端から現れて画面左端で完全に消えるまでの表示時間
+            val fps = 60
+            comment.velocity = (width + comment.width) / (moveDuration * fps)
 
             commentQueue.offer(comment)
         }.start()

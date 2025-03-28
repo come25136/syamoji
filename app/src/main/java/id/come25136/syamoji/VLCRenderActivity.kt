@@ -166,7 +166,6 @@ class VLCRenderActivity : AppCompatActivity(), WebSocketListener {
         val autoComment = Comment(
             text = message.getJSONObject("chat").getString("content"),
             color = Color.WHITE,
-            velocity = 8f
         )
         Log.d("Comment", autoComment.text)
         CoroutineScope(Dispatchers.Default).launch {
