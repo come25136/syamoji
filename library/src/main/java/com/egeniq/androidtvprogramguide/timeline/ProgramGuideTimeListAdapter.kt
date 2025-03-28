@@ -42,7 +42,7 @@ class ProgramGuideTimeListAdapter(
     companion object {
         private val TIME_UNIT_MS = TimeUnit.MINUTES.toMillis(60)
         private var rowHeaderOverlapping: Int = 0
-        private val TIME_FORMATTER = DateTimeFormatter.ofPattern("H:mm")
+        private val TIME_FORMATTER = DateTimeFormatter.ofPattern("HH")
     }
 
     // Nearest half hour at or before the start time.
