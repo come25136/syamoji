@@ -2,7 +2,6 @@ package id.come25136.syamoji
 
 import android.annotation.SuppressLint
 import android.content.Intent
-import android.text.Spanned
 import android.text.SpannedString
 import android.util.Log
 import android.widget.TextView
@@ -12,6 +11,8 @@ import com.egeniq.androidtvprogramguide.ProgramGuideFragment
 import com.egeniq.androidtvprogramguide.R
 import com.egeniq.androidtvprogramguide.entity.ProgramGuideChannel
 import com.egeniq.androidtvprogramguide.entity.ProgramGuideSchedule
+import com.egeniq.androidtvprogramguide.item.Channel
+import com.egeniq.androidtvprogramguide.item.Program
 import id.come25136.syamoji.iptv.fetchIptvXml
 import id.come25136.syamoji.m3u.fetchM3U
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
@@ -21,11 +22,10 @@ import org.threeten.bp.ZoneId
 import org.threeten.bp.ZoneOffset
 import org.threeten.bp.ZonedDateTime
 import org.threeten.bp.format.DateTimeFormatter
-import java.net.URL
 import java.util.Locale
 
 @UnstableApi
-class EpgFragment : ProgramGuideFragment<EpgFragment.Program>() {
+class EpgFragment : ProgramGuideFragment() {
     private val TAG = EpgFragment::class.java.name
 
     override val DISPLAY_LOCALE: Locale
@@ -36,22 +36,6 @@ class EpgFragment : ProgramGuideFragment<EpgFragment.Program>() {
         get() = 0
     override val DATE_WITH_DAY_FORMATTER: DateTimeFormatter
         get() = DateTimeFormatter.ofPattern("d日").withLocale(DISPLAY_LOCALE)
-
-    data class Channel(
-        override val id: String, // Mirakurun内部ではnetworkId + serviceIdとして扱われているもの
-        val group: String, // GR, BS, CS
-        override val name: Spanned,
-        override val logoUrl: String?, // チャンネルロゴ
-        val streamUrl: URL
-    ) : ProgramGuideChannel
-
-    data class Program(
-        val id: Long,
-        val title: String,
-        val description: String,
-        val metadata: String,
-        val channel: Channel
-    )
 
     override fun onScheduleClicked(programGuideSchedule: ProgramGuideSchedule<Program>) {
         val innerSchedule = programGuideSchedule.program
@@ -134,6 +118,7 @@ class EpgFragment : ProgramGuideFragment<EpgFragment.Program>() {
                                     tvDataProgram.title,
                                     tvDataProgram.desc ?: "",
                                     if (tvDataProgram.categories.isEmpty()) "" else tvDataProgram.categories[0],
+                                    tvDataProgram.categories.toTypedArray(),
                                     channelsById[tvDataProgram.channel]!!,
                                 )
 
@@ -142,10 +127,31 @@ class EpgFragment : ProgramGuideFragment<EpgFragment.Program>() {
                                     tvDataProgram.start,
                                     tvDataProgram.stop,
                                 )
+                            }.filter {
+                                mutableListOf(
+                                    "3273601024",
+                                    "3273701032",
+                                    "3273801040",
+                                    "3274101064",
+                                    "3273901048",
+                                    "3274201072",
+                                    "3274001056",
+                                    "3239123608",
+                                    "400101",
+                                    "400141",
+                                    "400151",
+                                    "400161",
+                                    "400171",
+                                    "400181",
+                                    "400211"
+                                ).contains(it.program?.channel?.id) &&
+                                        it.program?.title != "放送休止"
                             }.sortedBy { it.startsAtMillis } // 時系列にしないとguideで正しく表示されない（配列順に描画される）
                         }
                         .map { programs ->
-                            programs.groupBy { it.program!!.channel.id }
+                            programs.groupBy {
+                                it.program!!.channel.id
+                            }
                         }
                         .observeOn(AndroidSchedulers.mainThread())
                         .subscribe({ programs ->
@@ -171,13 +177,11 @@ class EpgFragment : ProgramGuideFragment<EpgFragment.Program>() {
             )
     }
 
-
     private fun createSchedule(
         program: Program,
         startAt: ZonedDateTime,
         endAt: ZonedDateTime,
     ): ProgramGuideSchedule<Program> {
-        val metadata = DateTimeFormatter.ofPattern("'Starts at' HH:mm").format(startAt)
         return ProgramGuideSchedule.createScheduleWithProgram(
             program.id,
             startAt.toInstant(),
