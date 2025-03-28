@@ -37,6 +37,8 @@ class EpgFragment : ProgramGuideFragment() {
     override val DATE_WITH_DAY_FORMATTER: DateTimeFormatter
         get() = DateTimeFormatter.ofPattern("d日").withLocale(DISPLAY_LOCALE)
 
+    private val PROGRAM_DISPLAY_TIME_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm")
+
     override fun onScheduleClicked(programGuideSchedule: ProgramGuideSchedule<Program>) {
         val innerSchedule = programGuideSchedule.program
         if (innerSchedule == null) {
@@ -117,7 +119,11 @@ class EpgFragment : ProgramGuideFragment() {
                                     (channelsById[tvDataProgram.channel]!!.id + (tvDataProgram.start.toEpochSecond() / 60).toString()).toLong(),
                                     tvDataProgram.title,
                                     tvDataProgram.desc ?: "",
-                                    if (tvDataProgram.categories.isEmpty()) "" else tvDataProgram.categories[0],
+                                    "${tvDataProgram.start.format(PROGRAM_DISPLAY_TIME_FORMAT)} - ${
+                                        tvDataProgram.stop.format(
+                                            PROGRAM_DISPLAY_TIME_FORMAT
+                                        )
+                                    }　|　${if (tvDataProgram.categories.isEmpty()) "" else tvDataProgram.categories[0]}",
                                     tvDataProgram.categories.toTypedArray(),
                                     channelsById[tvDataProgram.channel]!!,
                                 )
