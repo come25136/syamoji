@@ -53,7 +53,7 @@
         <item name="android:textColor">@color/programguide_detail_text_color</item>
         <item name="android:textDirection">locale</item>
         <item name="android:textAlignment">gravity</item>
-        <item name="android:maxLines">5</item>
+        <item name="android:maxLines">2</item>
         <item name="android:ellipsize">end</item>
         <item name="android:layout_marginEnd">96dp</item>
         <item name="android:layout_marginTop">6dp</item>
