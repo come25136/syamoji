@@ -20,7 +20,7 @@
     <dimen name="programguide_program_row_width">100dp</dimen>
     <dimen name="programguide_program_row_height_with_empty_space">36dp</dimen>
     <dimen name="programguide_minimum_item_height_sticking_out_behind_channel_column">74dp</dimen>
-    <dimen name="programguide_item_padding">3dp</dimen>
+    <dimen name="programguide_item_padding">1.3dp</dimen>
     <dimen name="programguide_item_spacing">0dp</dimen>
     <dimen name="programguide_gap_item_corner_radius">0dp</dimen>
     <dimen name="programguide_time_row_negative_margin">0dp</dimen>
