@@ -21,6 +21,7 @@ import android.graphics.drawable.GradientDrawable
 import android.text.Spanned
 import android.util.AttributeSet
 import android.view.View
+import android.view.ViewGroup
 import android.widget.FrameLayout
 import android.widget.ProgressBar
 import android.widget.TextView
@@ -69,6 +70,7 @@ class ProgramGuideItemView<T : Program> : FrameLayout {
     private var maxHeightForRipple: Int = 0
     private var preventParentRelayout = false
 
+    private val programItemContainer: ViewGroup
     private val titleView: TextView
     private val descriptionView: TextView
     private val minuteView: TextView
@@ -77,6 +79,7 @@ class ProgramGuideItemView<T : Program> : FrameLayout {
     init {
         View.inflate(context, R.layout.programguide_item_program, this)
 
+        programItemContainer = findViewById(R.id.program_item_container)
         titleView = findViewById(R.id.title)
         descriptionView = findViewById(R.id.description)
         minuteView = findViewById(R.id.minute)
@@ -221,13 +224,13 @@ class ProgramGuideItemView<T : Program> : FrameLayout {
         val parentView = parent as View
         if (layoutDirection == LAYOUT_DIRECTION_LTR) {
             layoutVisibleArea(
-                parentView.top + parentView.paddingTop - top,
+                parentView.paddingTop - top,
                 bottom - parentView.bottom
             )
         } else {
             layoutVisibleArea(
                 parentView.top - top,
-                bottom - parentView.bottom + parentView.paddingTop
+                bottom - parentView.paddingTop
             )
         }
     }
@@ -259,15 +262,16 @@ class ProgramGuideItemView<T : Program> : FrameLayout {
         if (parent.layoutDirection == LAYOUT_DIRECTION_LTR) {
             if (topPadding + staticItemPadding != paddingTop || bottomPadding + staticItemPadding != paddingBottom) {
                 // The size of this view is kept, no need to tell parent.
-                preventParentRelayout = true
+//                preventParentRelayout = true
 
-                // titleView.setPaddingRelative(
-                //     0,
-                //     topPadding + staticItemPadding,
-                //     0,
-                //     bottomPadding + staticItemPadding,
-                // )
-                preventParentRelayout = false
+                programItemContainer.setPaddingRelative(
+                    programItemContainer.paddingStart,
+                    topPadding + staticItemPadding,
+                    programItemContainer.paddingEnd,
+                    bottomPadding + staticItemPadding,
+                )
+
+//                preventParentRelayout = false
             }
         } else {
             if (topPadding + staticItemPadding != paddingBottom || bottomPadding + staticItemPadding != paddingBottom) {
