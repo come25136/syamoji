@@ -264,12 +264,12 @@ class ProgramGuideItemView<T : Program> : FrameLayout {
                 // The size of this view is kept, no need to tell parent.
 //                preventParentRelayout = true
 
-                programItemContainer.setPaddingRelative(
-                    programItemContainer.paddingStart,
-                    topPadding + staticItemPadding,
-                    programItemContainer.paddingEnd,
-                    bottomPadding + staticItemPadding,
-                )
+//                programItemContainer.setPaddingRelative(
+//                    programItemContainer.paddingStart,
+//                    topPadding + staticItemPadding,
+//                    programItemContainer.paddingEnd,
+//                    bottomPadding + staticItemPadding,
+//                )
 
 //                preventParentRelayout = false
             }
