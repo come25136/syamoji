@@ -165,13 +165,17 @@ class ProgramGuideItemView<T : Program> : FrameLayout {
         titleView.text = title
         descriptionView.text = schedule?.program?.description
 
-        // minute の設定
-        val minute = (schedule?.startsAtMillis ?: 0) / 60000 % 60
-        if (minute != 0L) {
-            minuteView.text = String.format(Locale.getDefault(), "%d", minute)
-            minuteView.visibility = View.VISIBLE
-        } else {
+        if (scheduleItem.isGap) {
             minuteView.visibility = View.GONE
+        } else {
+            // minute の設定
+            val minute = (schedule?.startsAtMillis ?: 0) / 60000 % 60
+            if (minute != 0L) {
+                minuteView.text = String.format(Locale.getDefault(), "%d", minute)
+                minuteView.visibility = View.VISIBLE
+            } else {
+                minuteView.visibility = View.GONE
+            }
         }
 
         initProgress(
