@@ -259,29 +259,30 @@ class ProgramGuideItemView<T : Program> : FrameLayout {
             bottomPadding = max(0, height - minHeight)
         }
 
+        val currentTopPadding = programItemContainer.paddingTop
+        val currentBottomPadding = programItemContainer.paddingBottom
+
         if (parent.layoutDirection == LAYOUT_DIRECTION_LTR) {
-            if (topPadding + staticItemPadding != paddingTop || bottomPadding + staticItemPadding != paddingBottom) {
-                // The size of this view is kept, no need to tell parent.
-//                preventParentRelayout = true
-
-//                programItemContainer.setPaddingRelative(
-//                    programItemContainer.paddingStart,
-//                    topPadding + staticItemPadding,
-//                    programItemContainer.paddingEnd,
-//                    bottomPadding + staticItemPadding,
-//                )
-
-//                preventParentRelayout = false
+            val newTopPadding = topPadding + staticItemPadding
+            val newBottomPadding = bottomPadding + staticItemPadding
+            if (currentTopPadding != newTopPadding || currentBottomPadding != newBottomPadding) {
+                programItemContainer.setPaddingRelative(
+                    programItemContainer.paddingStart,
+                    newTopPadding,
+                    programItemContainer.paddingEnd,
+                    newBottomPadding,
+                )
             }
         } else {
-            if (topPadding + staticItemPadding != paddingBottom || bottomPadding + staticItemPadding != paddingBottom) {
-                // In this case, we need to tell the parent to do a relayout, RTL is a bit more complicated, it seems.
-                // titleView.setPaddingRelative(
-                //     0,
-                //     bottomPadding + staticItemPadding,
-                //     0,
-                //     topPadding + staticItemPadding,
-                // )
+            val newTopPadding = bottomPadding + staticItemPadding
+            val newBottomPadding = topPadding + staticItemPadding
+            if (currentTopPadding != newTopPadding || currentBottomPadding != newBottomPadding) {
+                programItemContainer.setPaddingRelative(
+                    programItemContainer.paddingStart,
+                    newTopPadding,
+                    programItemContainer.paddingEnd,
+                    newBottomPadding,
+                )
             }
         }
     }
