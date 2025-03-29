@@ -1,6 +1,7 @@
 package id.come25136.syamoji.nx_jikkyo
 
 import android.util.Log
+import id.come25136.syamoji.BuildConfig
 import io.reactivex.rxjava3.schedulers.Schedulers
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -20,6 +21,7 @@ class WebSocketManager(private val channelId: String, private val listener: WebS
 
     private val jkId = getJkIdFromChannelId(channelId)
     private val request: Request = Request.Builder()
+        .header("user-agent", "syamoji/come25136_${BuildConfig.REVISION} (Android)")
         .url("wss://nx-jikkyo.tsukumijima.net/api/v1/channels/${jkId}/ws/comment")
         .build()
 
