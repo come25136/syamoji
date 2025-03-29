@@ -1,3 +1,5 @@
+import java.io.ByteArrayOutputStream
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -13,10 +15,16 @@ android {
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
+    }
 
+    buildFeatures {
+        buildConfig = true
     }
 
     buildTypes {
+        debug {
+            buildConfigField("String", "REVISION", "\"${getGitCommitId()}\"")
+        }
         release {
             isMinifyEnabled = false
             proguardFiles(
@@ -24,6 +32,7 @@ android {
                 "proguard-rules.pro"
             )
             signingConfig = signingConfigs.getByName("debug")
+            buildConfigField("String", "REVISION", "\"${getGitCommitId()}\"")
         }
     }
     compileOptions {
@@ -66,3 +75,14 @@ dependencies {
 
     implementation("org.videolan.android:libvlc-all:4.0.0-eap15")
 }
+
+fun getGitCommitId(): String {
+    val stdout = ByteArrayOutputStream()
+    exec {
+        commandLine("git", "rev-parse", "--short", "HEAD")
+        standardOutput = stdout
+    }
+    return stdout.toString().trim()
+}
+
+
