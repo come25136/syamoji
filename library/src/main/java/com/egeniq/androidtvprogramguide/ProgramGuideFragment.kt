@@ -98,7 +98,7 @@ abstract class ProgramGuideFragment: Fragment(), ProgramGuideManager.Listener,
     // Synchronizes the scrolls of the RecyclerViews. This is required if you expect pointer events in your application.
     // Normally this would not be possible on Android TV (although the user could hook up a mouse via USB), and since this
     // features requires extra listeners and manual scrolling on the views, which reduces performance, this feature is turned off by default.
-    protected open val SCROLL_SYNCING = true
+    protected open val SCROLL_SYNCING = false
 
     @Suppress("LeakingThis")
     protected open val DATE_WITH_DAY_FORMATTER: DateTimeFormatter =
