@@ -1,6 +1,5 @@
 package id.come25136.syamoji
 
-import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
@@ -18,7 +17,6 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import org.json.JSONObject
 import org.videolan.libvlc.LibVLC
 import org.videolan.libvlc.Media
 import org.videolan.libvlc.MediaPlayer
@@ -154,23 +152,10 @@ class VLCRenderActivity : AppCompatActivity(), WebSocketListener {
     }
 
     // WebSocketListenerの実装
-    override fun onMessageReceived(message: JSONObject) {
-        val chat = message.has("chat")
-        if (!chat) return
-
-        // UIに反映する処理などをここに追加
-        while (!commentRender.isInitialized()) {
-            Thread.sleep(100L)
-        }
-
-        val autoComment = Comment(
-            text = message.getJSONObject("chat").getString("content"),
-            color = Color.WHITE,
-        )
-        Log.d("Comment", autoComment.text)
+    override fun onMessageReceived(message: String) {
         CoroutineScope(Dispatchers.Default).launch {
             delay(100)
-            commentRender.addComment(autoComment)
+            commentRender.addComment(message)
         }
     }
 }

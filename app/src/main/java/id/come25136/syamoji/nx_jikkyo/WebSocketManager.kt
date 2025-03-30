@@ -7,11 +7,10 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import okhttp3.WebSocket
-import org.json.JSONObject
 import java.util.concurrent.TimeUnit
 
 interface WebSocketListener {
-    fun onMessageReceived(message: JSONObject)
+    fun onMessageReceived(message: String)
 }
 
 class WebSocketManager(private val channelId: String, private val listener: WebSocketListener) {
@@ -47,11 +46,7 @@ class WebSocketManager(private val channelId: String, private val listener: WebS
             }
 
             override fun onMessage(webSocket: WebSocket, text: String) {
-                Log.d("WebSocketManager", "Message received: $text")
-
-                val json = JSONObject(text)
-
-                listener.onMessageReceived(json) // コールバックを呼び出す
+                listener.onMessageReceived(text) // コールバックを呼び出す
             }
 
             override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {

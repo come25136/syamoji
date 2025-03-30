@@ -11,7 +11,9 @@ import android.graphics.Typeface
 import android.util.AttributeSet
 import android.view.SurfaceHolder
 import android.view.SurfaceView
+import org.json.JSONObject
 import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.concurrent.Executors
 import kotlin.math.min
 import kotlin.random.Random
 import kotlin.system.measureTimeMillis
@@ -66,6 +68,8 @@ class CommentRender @JvmOverloads constructor(
     private val commentQueue = ConcurrentLinkedQueue<Comment>()
     private val lastComments = arrayListOf<Comment>();
 
+    private val threadPool = Executors.newFixedThreadPool(10)
+
     init {
         holder.addCallback(this)
         holder.setFormat(PixelFormat.TRANSLUCENT)
@@ -76,8 +80,21 @@ class CommentRender @JvmOverloads constructor(
         return totalFontHeight + spacing
     }
 
-    fun addComment(comment: Comment) {
-        Thread {
+    fun addComment(nxPayload: String) {
+        threadPool.execute {
+            while (!isInitialized()) {
+                Thread.sleep(100L)
+            }
+
+            val obj = JSONObject(nxPayload)
+            val chat = obj.has("chat")
+            if (!chat) return@execute
+
+            val comment = Comment(
+                text = obj.getJSONObject("chat").getString("content"),
+                color = Color.WHITE,
+            )
+
             comment.width = paint.measureText(comment.text)
             paint.color = comment.color
             val textBitmap = createTextBitmap(comment.text, paint)
@@ -89,7 +106,7 @@ class CommentRender @JvmOverloads constructor(
             comment.velocity = (width + comment.width) / (moveDuration * fps)
 
             commentQueue.offer(comment)
-        }.start()
+        }
     }
 
     private fun createTextBitmap(text: String, paint: Paint): Bitmap {
