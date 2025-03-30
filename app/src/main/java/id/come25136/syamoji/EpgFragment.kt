@@ -24,6 +24,22 @@ import org.threeten.bp.ZonedDateTime
 import org.threeten.bp.format.DateTimeFormatter
 import java.util.Locale
 
+val subChannelBlacklist = mutableListOf(
+    "3273601025", // ＮＨＫ総合２・東京
+    "3273701033", // ＮＨＫＥテレ２東京
+    "3273701034", // ＮＨＫＥテレ３東京
+    "3273801041", // 日テレ２
+    "3274101065", // テレビ朝日
+    "3274101066", // テレビ朝日
+    "3273901049", // ＴＢＳ２
+    "3274201073", // テレ東２
+    "3274201074", // テレ東３
+    "3274001057", // フジテレビ
+    "3274001058", // フジテレビ
+    "3239123609", // ＴＯＫＹＯ　ＭＸ１
+    "3239123610", // ＴＯＫＹＯ　ＭＸ２
+)
+
 @UnstableApi
 class EpgFragment : ProgramGuideFragment() {
     private val TAG = EpgFragment::class.java.name
@@ -136,24 +152,7 @@ class EpgFragment : ProgramGuideFragment() {
                                     tvDataProgram.stop,
                                 )
                             }.filter {
-                                mutableListOf(
-                                    "3273601024",
-                                    "3273701032",
-                                    "3273801040",
-                                    "3274101064",
-                                    "3273901048",
-                                    "3274201072",
-                                    "3274001056",
-                                    "3239123608",
-                                    "400101",
-                                    "400141",
-                                    "400151",
-                                    "400161",
-                                    "400171",
-                                    "400181",
-                                    "400211"
-                                ).contains(it.program?.channel?.id) &&
-                                        it.program?.title != "放送休止"
+                                !subChannelBlacklist.contains(it.program?.channel?.id) && it.program?.title != "放送休止"
                             }.sortedBy { it.startsAtMillis } // 時系列にしないとguideで正しく表示されない（配列順に描画される）
                         }
                         .map { programs ->
