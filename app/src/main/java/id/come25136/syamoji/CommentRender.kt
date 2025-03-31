@@ -14,7 +14,6 @@ import android.view.SurfaceView
 import org.json.JSONObject
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.Executors
-import kotlin.math.min
 import kotlin.random.Random
 import kotlin.system.measureTimeMillis
 
@@ -66,9 +65,11 @@ class CommentRender @JvmOverloads constructor(
     private var lastTime = System.currentTimeMillis()
 
     private val commentQueue = ConcurrentLinkedQueue<Comment>()
-    private val lastComments = arrayListOf<Comment>();
 
     private val threadPool = Executors.newFixedThreadPool(10)
+
+    private val FPS = 60 // 1秒間のフレーム数
+    private val MOVE_DURATION_SECONDS = 5 // コメントが画面を横切る時間（秒）
 
     init {
         holder.addCallback(this)
@@ -101,9 +102,7 @@ class CommentRender @JvmOverloads constructor(
             comment.bitmap = textBitmap
             comment.x = width.toFloat()
 
-            val moveDuration = 5 // 画面右端から現れて画面左端で完全に消えるまでの表示時間
-            val fps = 60
-            comment.velocity = (width + comment.width) / (moveDuration * fps)
+            comment.velocity = (width + comment.width) / (MOVE_DURATION_SECONDS * FPS)
 
             commentQueue.offer(comment)
         }
@@ -120,6 +119,23 @@ class CommentRender @JvmOverloads constructor(
         canvas.drawText(text, 0f, -paint.ascent(), strokePaint)
         canvas.drawText(text, 0f, -paint.ascent(), paint)
         return bitmap
+    }
+
+    private fun findAvailableLane(comment: Comment): Int? {
+        for (lane in 0 until maxLanes) {
+            val laneComments = comments.filter { it.lane == lane }
+
+            val isLaneAvailable = laneComments.none { existingComment ->
+                val moveDistance = comment.velocity * MOVE_DURATION_SECONDS
+                val existingMoveDistance = existingComment.velocity * MOVE_DURATION_SECONDS
+
+                comment.x - moveDistance < existingComment.x + existingComment.width - existingMoveDistance
+            }
+            if (isLaneAvailable) {
+                return lane
+            }
+        }
+        return null
     }
 
     private fun drawComments(canvas: Canvas?) {
@@ -141,33 +157,16 @@ class CommentRender @JvmOverloads constructor(
         while (commentQueue.isNotEmpty()) {
             val comment = commentQueue.poll()
 
-            var laneIndex = 0
+            val availableLaneIndex = findAvailableLane(comment)
 
-            val availableLaneIndexes =
-                (0..maxLanes).toList()
-                    .filter { it !in lastComments.map { comment -> comment.lane } }
-
-            val availableLaneComment = lastComments.sortedBy { it.lane }.find { comment ->
-                (comment.x + comment.width + spacing) < width.toFloat()
+            if (availableLaneIndex != null) {
+                comment.lane = availableLaneIndex
+            } else {
+                comment.lane = Random.nextInt(0, maxLanes)
             }
 
-            if (availableLaneIndexes.isNotEmpty()) {
-                laneIndex = if (availableLaneComment != null) {
-                    min(availableLaneIndexes[0], availableLaneComment.lane)
-                } else {
-                    availableLaneIndexes[0]
-                }
-            } else if (availableLaneIndexes.isEmpty() && availableLaneComment == null) {
-                laneIndex = Random.nextInt(
-                    0,
-                    maxLanes
-                )
-            }
-
-            comment.lane = laneIndex
             comment.y = topPadding + (comment.lane * laneHeight)
 
-            lastComments.add(comment)
             comments.add(comment)
         }
 
@@ -181,10 +180,6 @@ class CommentRender @JvmOverloads constructor(
                     canvas.drawBitmap(it, comment.x, comment.y, copyPaint)
                 }
                 comment.x -= comment.velocity * (elapsedTime / availableTime)
-
-                if (comment.x < componentWidth - comment.width) {
-                    lastComments.remove(comment)
-                }
 
                 if (comment.x < -comment.width) {
                     iterator.remove()
