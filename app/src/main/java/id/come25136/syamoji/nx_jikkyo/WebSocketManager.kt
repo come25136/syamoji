@@ -19,8 +19,8 @@ data class MessageServer(
 )
 
 class WebSocketManager(private val channelId: String, private val listener: WebSocketListener) {
-    private lateinit var watchSession: WatchSession
-    private lateinit var commentSession: CommentSession
+    private var watchSession: WatchSession? = null
+    private var commentSession: CommentSession? = null
 
     fun connect() {
         val jkId = getJkIdFromChannelId(channelId)
@@ -40,7 +40,7 @@ class WebSocketManager(private val channelId: String, private val listener: WebS
     }
 
     fun close() {
-        watchSession.close()
-        commentSession.close()
+        watchSession?.close()
+        commentSession?.close()
     }
 }
