@@ -6,18 +6,6 @@ interface WebSocketListener {
     fun onMessageReceived(message: String)
 }
 
-data class MessageServer(
-    /**
-     * example: niwavided
-     */
-    val type: String,
-
-    /**
-     * example: wss://nx-jikkyo.tsukumijima.net/api/v1/channels/jk6/ws/comment
-     */
-    val uri: String,
-)
-
 class WebSocketManager(private val channelId: String, private val listener: WebSocketListener) {
     private var watchSession: WatchSession? = null
     private var commentSession: CommentSession? = null
