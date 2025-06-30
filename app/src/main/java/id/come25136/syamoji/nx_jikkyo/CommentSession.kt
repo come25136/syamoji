@@ -50,7 +50,7 @@ class CommentSession(
             override fun onOpen(webSocket: WebSocket, response: Response) {
                 Log.d(CommentSession::class.simpleName, "WebSocket opened: ${response.message}")
 
-                sendMessage("[{\"ping\":{\"content\":\"rs:0\"}},{\"ping\":{\"content\":\"ps:0\"}},{\"thread\":{\"version\":\"20061206\",\"thread\":\"${watchSessionData.threadId}\",\"threadkey\":\"${watchSessionData.yourPostKey}\",\"user_id\":\"\",\"res_from\":-100}},{\"ping\":{\"content\":\"pf:0\"}},{\"ping\":{\"content\":\"rf:0\"}}]")
+                sendMessage("[{\"ping\":{\"content\":\"rs:0\"}},{\"ping\":{\"content\":\"ps:0\"}},{\"thread\":{\"version\":\"20061206\",\"thread\":\"${watchSessionData.threadId}\",\"threadkey\":\"${watchSessionData.yourPostKey}\",\"user_id\":\"\",\"res_from\":0}},{\"ping\":{\"content\":\"pf:0\"}},{\"ping\":{\"content\":\"rf:0\"}}]")
             }
 
             override fun onMessage(webSocket: WebSocket, text: String) {
