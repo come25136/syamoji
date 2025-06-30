@@ -68,7 +68,7 @@ class CommentRender @JvmOverloads constructor(
     private val threadPool = Executors.newFixedThreadPool(10)
 
     private val FPS = 60 // 1秒間のフレーム数
-    private val MOVE_DURATION_SECONDS = 5 // コメントが画面を横切る時間（秒）
+    private val MOVE_DURATION_SECONDS = 6 // コメントが画面を横切る時間（秒）
 
     init {
         holder.addCallback(this)
@@ -116,36 +116,34 @@ class CommentRender @JvmOverloads constructor(
         return bitmap
     }
 
-    private fun findAvailableLane(renderComment: RenderComment): Int? {
+    private fun findAvailableLane(newComment: RenderComment): Int? {
         for (lane in 0 until maxLanes) {
             val laneComments = renderComments.filter { it.lane == lane }
 
             val isLaneAvailable = laneComments.none { existingComment ->
-                val existingCommentEndX = existingComment.x + existingComment.width
-                val newCommentStartX = renderComment.x
+                val existingCommentTime =
+                    (existingComment.x + existingComment.width) / existingComment.velocity / FPS
 
-                // Adjust for velocity to prevent overlap
-                val existingCommentFutureX = existingComment.x - existingComment.velocity
-                val newCommentFutureX = newCommentStartX - renderComment.velocity
+                val distance = newComment.x - (existingComment.x + existingComment.width)
 
-                // Check if the new comment overlaps with existing comments in the same lane
-                if (renderComment.velocity > existingComment.velocity) {
-                    // New comment is faster, ensure it doesn't catch up to the existing comment
-                    val fps = 60
-                    val availableTime = 1000 / fps
-                    val elapsedTime = System.currentTimeMillis() - lastTime
-                    newCommentFutureX < existingCommentEndX + (existingComment.velocity * (elapsedTime / availableTime)) &&
-                            newCommentFutureX + renderComment.width > existingComment.x
-                } else {
-                    // Existing comment is faster or equal, ensure it doesn't overlap
-                    newCommentFutureX < existingCommentFutureX + existingComment.width + spacing &&
-                            newCommentFutureX + renderComment.width > existingCommentFutureX
+                if (distance < 0) {
+                    // xが同じだとなる
+                    return@none true
                 }
+
+                // はじき
+                val velocitySecDiff = (newComment.velocity - existingComment.velocity) * FPS
+                if (velocitySecDiff <= 0f) return@none false
+
+                val timeToCatch = distance / velocitySecDiff
+                val overtake = timeToCatch <= existingCommentTime
+
+                return@none overtake
             }
-            if (isLaneAvailable) {
-                return lane
-            }
+
+            if (isLaneAvailable) return lane
         }
+
         return null
     }
 
