@@ -11,13 +11,12 @@ import android.graphics.Typeface
 import android.util.AttributeSet
 import android.view.SurfaceHolder
 import android.view.SurfaceView
-import org.json.JSONObject
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.Executors
 import kotlin.random.Random
 import kotlin.system.measureTimeMillis
 
-data class Comment(
+data class RenderComment(
     val text: String,
     val color: Int = Color.WHITE,
     var x: Float = 0f,
@@ -33,7 +32,7 @@ class CommentRender @JvmOverloads constructor(
 ) : SurfaceView(context, attrs), SurfaceHolder.Callback {
     private val globalFontSize = 45f
 
-    private val comments = mutableListOf<Comment>()
+    private val renderComments = mutableListOf<RenderComment>()
     private val paint = Paint().apply {
         isAntiAlias = true
         typeface = Typeface.DEFAULT_BOLD
@@ -64,7 +63,7 @@ class CommentRender @JvmOverloads constructor(
 
     private var lastTime = System.currentTimeMillis()
 
-    private val commentQueue = ConcurrentLinkedQueue<Comment>()
+    private val renderCommentQueue = ConcurrentLinkedQueue<RenderComment>()
 
     private val threadPool = Executors.newFixedThreadPool(10)
 
@@ -81,30 +80,26 @@ class CommentRender @JvmOverloads constructor(
         return totalFontHeight + spacing
     }
 
-    fun addComment(nxPayload: String) {
+    fun addComment(comment: Comment) {
         threadPool.execute {
             while (!isInitialized()) {
                 Thread.sleep(100L)
             }
 
-            val obj = JSONObject(nxPayload)
-            val chat = obj.has("chat")
-            if (!chat) return@execute
-
-            val comment = Comment(
-                text = obj.getJSONObject("chat").getString("content"),
+            val renderComment = RenderComment(
+                text = comment.content,
                 color = Color.WHITE,
             )
 
-            comment.width = paint.measureText(comment.text)
-            paint.color = comment.color
-            val textBitmap = createTextBitmap(comment.text, paint)
-            comment.bitmap = textBitmap
-            comment.x = width.toFloat()
+            renderComment.width = paint.measureText(renderComment.text)
+            paint.color = renderComment.color
+            val textBitmap = createTextBitmap(renderComment.text, paint)
+            renderComment.bitmap = textBitmap
+            renderComment.x = width.toFloat()
 
-            comment.velocity = (width + comment.width) / (MOVE_DURATION_SECONDS * FPS)
+            renderComment.velocity = (width + renderComment.width) / (MOVE_DURATION_SECONDS * FPS)
 
-            commentQueue.offer(comment)
+            renderCommentQueue.offer(renderComment)
         }
     }
 
@@ -121,15 +116,31 @@ class CommentRender @JvmOverloads constructor(
         return bitmap
     }
 
-    private fun findAvailableLane(comment: Comment): Int? {
+    private fun findAvailableLane(renderComment: RenderComment): Int? {
         for (lane in 0 until maxLanes) {
-            val laneComments = comments.filter { it.lane == lane }
+            val laneComments = renderComments.filter { it.lane == lane }
 
             val isLaneAvailable = laneComments.none { existingComment ->
-                val moveDistance = comment.velocity * MOVE_DURATION_SECONDS
-                val existingMoveDistance = existingComment.velocity * MOVE_DURATION_SECONDS
+                val existingCommentEndX = existingComment.x + existingComment.width
+                val newCommentStartX = renderComment.x
 
-                comment.x - moveDistance < existingComment.x + existingComment.width - existingMoveDistance
+                // Adjust for velocity to prevent overlap
+                val existingCommentFutureX = existingComment.x - existingComment.velocity
+                val newCommentFutureX = newCommentStartX - renderComment.velocity
+
+                // Check if the new comment overlaps with existing comments in the same lane
+                if (renderComment.velocity > existingComment.velocity) {
+                    // New comment is faster, ensure it doesn't catch up to the existing comment
+                    val fps = 60
+                    val availableTime = 1000 / fps
+                    val elapsedTime = System.currentTimeMillis() - lastTime
+                    newCommentFutureX < existingCommentEndX + (existingComment.velocity * (elapsedTime / availableTime)) &&
+                            newCommentFutureX + renderComment.width > existingComment.x
+                } else {
+                    // Existing comment is faster or equal, ensure it doesn't overlap
+                    newCommentFutureX < existingCommentFutureX + existingComment.width + spacing &&
+                            newCommentFutureX + renderComment.width > existingCommentFutureX
+                }
             }
             if (isLaneAvailable) {
                 return lane
@@ -141,7 +152,7 @@ class CommentRender @JvmOverloads constructor(
     private fun drawComments(canvas: Canvas?) {
         if (canvas == null) return
 
-        val fps = 60
+        val fps = FPS
         val availableTime = 1000 / fps
         val elapsedTime = System.currentTimeMillis() - lastTime
         if (elapsedTime < availableTime) {
@@ -154,8 +165,8 @@ class CommentRender @JvmOverloads constructor(
 
         canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR)
 
-        while (commentQueue.isNotEmpty()) {
-            val comment = commentQueue.poll()
+        while (renderCommentQueue.isNotEmpty()) {
+            val comment = renderCommentQueue.poll()
 
             val availableLaneIndex = findAvailableLane(comment)
 
@@ -167,11 +178,11 @@ class CommentRender @JvmOverloads constructor(
 
             comment.y = topPadding + (comment.lane * laneHeight)
 
-            comments.add(comment)
+            renderComments.add(comment)
         }
 
         val time = measureTimeMillis {
-            val iterator = comments.iterator()
+            val iterator = renderComments.iterator()
 
             while (iterator.hasNext()) {
                 val comment = iterator.next()

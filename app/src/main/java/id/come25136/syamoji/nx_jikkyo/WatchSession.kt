@@ -26,13 +26,13 @@ class WatchSession(jkId: String, private val listener: WatchSessionListener) {
         .pingInterval(10, TimeUnit.SECONDS)
         .build()
 
-    fun sessionUrlBuilder(jkId: String): Request {
+    private fun sessionUrlBuilder(jkId: String): Request {
         return RequestUtil.requestBuilder("wss://nx-jikkyo.tsukumijima.net/api/v1/channels/${jkId}/ws/watch")
     }
 
     private lateinit var watchSocket: WebSocket
 
-    fun sendMessage(message: String) {
+    private fun sendMessage(message: String) {
         Log.d(WatchSession::class.simpleName, "⬆️ $message")
         watchSocket.send(message)
     }

@@ -23,9 +23,6 @@
         </service>
 
         <activity
-            android:name=".VideoRenderActivity"
-            android:exported="false" />
-        <activity
             android:name=".VLCRenderActivity"
             android:exported="false" />
         <activity

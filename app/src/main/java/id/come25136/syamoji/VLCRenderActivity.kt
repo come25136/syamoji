@@ -9,8 +9,8 @@ import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
 import androidx.media3.common.util.UnstableApi
-import id.come25136.syamoji.nx_jikkyo.WebSocketListener
-import id.come25136.syamoji.nx_jikkyo.WebSocketManager
+import id.come25136.syamoji.nx_jikkyo.CommentSocketListener
+import id.come25136.syamoji.nx_jikkyo.CommentSocketManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -23,11 +23,11 @@ import org.videolan.libvlc.MediaPlayer
 import org.videolan.libvlc.util.VLCVideoLayout
 
 @UnstableApi
-class VLCRenderActivity : AppCompatActivity(), WebSocketListener {
+class VLCRenderActivity : AppCompatActivity(), CommentSocketListener {
     private lateinit var playerView: VLCVideoLayout
     private lateinit var spinner: ProgressBar
     private lateinit var streamUrl: String
-    private lateinit var webSocketManager: WebSocketManager
+    private lateinit var commentSocketManager: CommentSocketManager
 
     private lateinit var commentRender: CommentRender
     private val commentAdderJob = CoroutineScope(Dispatchers.Default + Job())
@@ -75,13 +75,49 @@ class VLCRenderActivity : AppCompatActivity(), WebSocketListener {
 
         // WebSocket接続のセットアップ
         val channelId = intent.getStringExtra("channelId") ?: throw Error("No defined serviceId")
-        webSocketManager = WebSocketManager(channelId, this)
-        webSocketManager.connect()
+        commentSocketManager = CommentSocketManager(channelId, this)
+        commentSocketManager.connect()
 
         // スクリーンをオンに保持
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
         spinner.isVisible = false
+
+        commentAdderJob.launch {
+            while (true) {
+                if (mediaPlayer.isReleased) {
+                    cancel()
+
+                    return@launch
+                }
+
+                delay(500)
+                val vlcTimestamp = mediaPlayer.time // VLCの現在再生タイムスタンプ（ミリ秒）
+//                commentRender.addComment(
+//                    Comment(
+//                        id = "1",
+//                        timestamp = ZonedDateTime.now(),
+//                        content = "わざとらしいのはちょっとな・・"
+//                    )
+//                )
+//                commentRender.addComment(
+//                    Comment(
+//                        id = "1",
+//                        timestamp = ZonedDateTime.now(),
+//                        content = "草"
+//                    )
+//                )
+//                commentRender.addComment(
+//                    Comment(
+//                        id = "1",
+//                        timestamp = ZonedDateTime.now(),
+//                        content = "止まるんじゃねぇぞ…"
+//                    )
+//                )
+
+                Log.d("timestamp", "vlc timer: ${mediaPlayer.time}")
+            }
+        }
     }
 
     private fun prepareMediaPlayer() {
@@ -146,16 +182,25 @@ class VLCRenderActivity : AppCompatActivity(), WebSocketListener {
 
         commentAdderJob.cancel()
 
-        webSocketManager.close()
+        commentSocketManager.close()
 
         window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
     }
 
-    // WebSocketListenerの実装
-    override fun onMessageReceived(message: String) {
+    // CommentSocketListenerの実装
+    override fun onReceiveReady() {
+        TODO("Not yet implemented")
+    }
+
+    override fun onComment(comment: Comment) {
+        if (comment.isPast) {
+            Log.d(VLCRenderActivity::class.simpleName,"Ignore comment (isPast=true): [${comment.id}] ${comment.content}")
+            return
+        }
+
         CoroutineScope(Dispatchers.Default).launch {
             delay(100)
-            commentRender.addComment(message)
+            commentRender.addComment(comment)
         }
     }
 }

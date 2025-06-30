@@ -1,15 +1,19 @@
 package id.come25136.syamoji.nx_jikkyo
 
 import android.util.Log
+import id.come25136.syamoji.Comment
 import id.come25136.syamoji.util.RequestUtil
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import okhttp3.WebSocket
+import org.json.JSONObject
+import java.time.Instant
+import java.time.ZoneId
 import java.util.concurrent.TimeUnit
 
 interface CommentSessionListener {
-    fun onMessageReceived(message: String)
+    fun onComment(comment: Comment)
 }
 
 class CommentSession(
@@ -17,18 +21,20 @@ class CommentSession(
     watchSessionData: WatchSessionData,
     private val listener: CommentSessionListener
 ) {
+    private var lastNo = -1
+
     private val client: OkHttpClient = OkHttpClient.Builder()
         .pingInterval(10, TimeUnit.SECONDS)
         .build()
 
-    fun sessionUrlBuilder(jkId: String): Request {
+    private fun sessionUrlBuilder(jkId: String): Request {
         return RequestUtil.requestBuilder("wss://nx-jikkyo.tsukumijima.net/api/v1/channels/${jkId}/ws/comment")
     }
 
     private lateinit var commentSocket: WebSocket
 
-    fun sendMessage(message: String) {
-        Log.d(WatchSession::class.simpleName, "⬆️ $message")
+    private fun sendMessage(message: String) {
+        Log.d(CommentSession::class.simpleName, "⬆️ $message")
         commentSocket.send(message)
     }
 
@@ -42,23 +48,45 @@ class CommentSession(
         Log.d(this::class.simpleName, "Connecting to WebSocket: ${request.url}")
         commentSocket = client.newWebSocket(request, object : okhttp3.WebSocketListener() {
             override fun onOpen(webSocket: WebSocket, response: Response) {
-                Log.d(WatchSession::class.simpleName, "WebSocket opened: ${response.message}")
+                Log.d(CommentSession::class.simpleName, "WebSocket opened: ${response.message}")
 
                 sendMessage("[{\"ping\":{\"content\":\"rs:0\"}},{\"ping\":{\"content\":\"ps:0\"}},{\"thread\":{\"version\":\"20061206\",\"thread\":\"${watchSessionData.threadId}\",\"threadkey\":\"${watchSessionData.yourPostKey}\",\"user_id\":\"\",\"res_from\":-100}},{\"ping\":{\"content\":\"pf:0\"}},{\"ping\":{\"content\":\"rf:0\"}}]")
             }
 
             override fun onMessage(webSocket: WebSocket, text: String) {
-                Log.d(WatchSession::class.simpleName, "⬇️ $text")
+                Log.d(CommentSession::class.simpleName, "⬇️ $text")
 
-                listener.onMessageReceived(text) // コールバックを呼び出す
+                val json = JSONObject(text)
+
+                if (json.has("chat")) {
+                    val chat = json.getJSONObject("chat")
+                    val isPast = chat.getInt("no") <= lastNo
+
+                    listener.onComment(
+                        Comment(
+                            id = chat.getString("no"),
+                            timestamp = Instant.ofEpochMilli(
+                                chat.getLong("date") * 1000 + chat.getLong(
+                                    "date_usec"
+                                ) / 1000
+                            )
+                                .atZone(ZoneId.of("Asia/Tokyo")),
+                            isPast = isPast,
+                            content = chat.getString("content")
+                        )
+                    )
+                } else if (json.has("thread")) {
+                    val thread = json.getJSONObject("thread")
+                    lastNo = thread.getInt("last_res")
+                }
             }
 
             override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
-                Log.d(WatchSession::class.simpleName, "WebSocket closed: $reason")
+                Log.d(CommentSession::class.simpleName, "WebSocket closed: $reason")
             }
 
             override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
-                Log.d(WatchSession::class.simpleName, "WebSocket error: ${t.message}")
+                Log.d(CommentSession::class.simpleName, "WebSocket error: ${t.message}")
             }
         })
     }

@@ -1,12 +1,14 @@
 package id.come25136.syamoji.nx_jikkyo
 
 import android.util.Log
+import id.come25136.syamoji.Comment
 
-interface WebSocketListener {
-    fun onMessageReceived(message: String)
+interface CommentSocketListener {
+    fun onReceiveReady()
+    fun onComment(comment: Comment)
 }
 
-class WebSocketManager(private val channelId: String, private val listener: WebSocketListener) {
+class CommentSocketManager(private val channelId: String, private val listener: CommentSocketListener) {
     private var watchSession: WatchSession? = null
     private var commentSession: CommentSession? = null
 
@@ -19,8 +21,8 @@ class WebSocketManager(private val channelId: String, private val listener: WebS
 
                 commentSession =
                     CommentSession(jkId, watchSessionData, object : CommentSessionListener {
-                        override fun onMessageReceived(message: String) {
-                            listener.onMessageReceived(message)
+                        override fun onComment(comment: Comment) {
+                            listener.onComment(comment)
                         }
                     })
             }
