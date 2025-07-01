@@ -13,8 +13,6 @@ import id.come25136.syamoji.nx_jikkyo.CommentSocketListener
 import id.come25136.syamoji.nx_jikkyo.CommentSocketManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.videolan.libvlc.LibVLC
@@ -30,7 +28,6 @@ class VLCRenderActivity : AppCompatActivity(), CommentSocketListener {
     private lateinit var commentSocketManager: CommentSocketManager
 
     private lateinit var commentRender: CommentRender
-    private val commentAdderJob = CoroutineScope(Dispatchers.Default + Job())
 
     private lateinit var libVLC: LibVLC
     private lateinit var mediaPlayer: MediaPlayer
@@ -47,14 +44,8 @@ class VLCRenderActivity : AppCompatActivity(), CommentSocketListener {
 
         commentRender = findViewById(R.id.commentRender)
 
-
-        streamUrl = intent.getStringExtra("streamUrl")!!
-
-
-
         playerView = findViewById(R.id.player_view)
         spinner = findViewById(R.id.progressBar)
-
 
         // URLの取得
         streamUrl = intent.getStringExtra("streamUrl")!!
@@ -82,42 +73,6 @@ class VLCRenderActivity : AppCompatActivity(), CommentSocketListener {
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
         spinner.isVisible = false
-
-        commentAdderJob.launch {
-            while (true) {
-                if (mediaPlayer.isReleased) {
-                    cancel()
-
-                    return@launch
-                }
-
-                delay(500)
-                val vlcTimestamp = mediaPlayer.time // VLCの現在再生タイムスタンプ（ミリ秒）
-//                commentRender.addComment(
-//                    Comment(
-//                        id = "1",
-//                        timestamp = ZonedDateTime.now(),
-//                        content = "わざとらしいのはちょっとな・・"
-//                    )
-//                )
-//                commentRender.addComment(
-//                    Comment(
-//                        id = "1",
-//                        timestamp = ZonedDateTime.now(),
-//                        content = "草"
-//                    )
-//                )
-//                commentRender.addComment(
-//                    Comment(
-//                        id = "1",
-//                        timestamp = ZonedDateTime.now(),
-//                        content = "止まるんじゃねぇぞ…"
-//                    )
-//                )
-
-                Log.d("timestamp", "vlc timer: ${mediaPlayer.time}")
-            }
-        }
     }
 
     private fun prepareMediaPlayer() {
@@ -174,15 +129,13 @@ class VLCRenderActivity : AppCompatActivity(), CommentSocketListener {
     override fun onDestroy() {
         super.onDestroy()
 
+        commentSocketManager.close(true)
+
         // メディアプレイヤーとLibVLCのリソースを解放
         mediaPlayer.stop()
         mediaPlayer.detachViews()
         mediaPlayer.release()
         libVLC.release()
-
-        commentAdderJob.cancel()
-
-        commentSocketManager.close()
 
         window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
     }
@@ -194,7 +147,10 @@ class VLCRenderActivity : AppCompatActivity(), CommentSocketListener {
 
     override fun onComment(comment: Comment) {
         if (comment.isPast) {
-            Log.d(VLCRenderActivity::class.simpleName,"Ignore comment (isPast=true): [${comment.id}] ${comment.content}")
+            Log.d(
+                VLCRenderActivity::class.simpleName,
+                "Ignore comment (isPast=true): [${comment.id}] ${comment.content}"
+            )
             return
         }
 

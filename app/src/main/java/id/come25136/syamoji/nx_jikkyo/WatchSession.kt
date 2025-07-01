@@ -19,9 +19,13 @@ data class WatchSessionData(
 
 interface WatchSessionListener {
     fun onReady(watchSessionData: WatchSessionData)
+    fun onClosed()
 }
 
-class WatchSession(jkId: String, private val listener: WatchSessionListener) {
+class WatchSession(private val jkId: String, private val listener: WatchSessionListener) :
+    okhttp3.WebSocketListener() {
+    private var closeNotify: Boolean = false
+
     private val client: OkHttpClient = OkHttpClient.Builder()
         .pingInterval(10, TimeUnit.SECONDS)
         .build()
@@ -37,83 +41,92 @@ class WatchSession(jkId: String, private val listener: WatchSessionListener) {
         watchSocket.send(message)
     }
 
-    init {
-        init(jkId)
+    override fun onOpen(webSocket: WebSocket, response: Response) {
+        Log.d(WatchSession::class.simpleName, "WebSocket opened: ${response.message}")
+
+        closeNotify = true
+
+        sendMessage("{\"type\":\"startWatching\",\"data\":{\"reconnect\":false}}")
+    }
+
+    override fun onMessage(webSocket: WebSocket, text: String) {
+        Log.d(WatchSession::class.simpleName, "⬇️ $text")
+
+        val json = JSONObject(text)
+
+        val messageType = json.getString("type")
+        if (messageType == "room") {
+            /**
+             * {
+             *   "type": "room",
+             *   "data": {
+             *     "messageServer": {
+             *       "uri": "wss://nx-jikkyo.tsukumijima.net/api/v1/channels/jk4/ws/comment",
+             *       "type": "niwavided"
+             *     },
+             *     "name": "アリーナ",
+             *     "threadId": "12018",
+             *     "isFirst": true,
+             *     "waybackkey": "DUMMY_TOKEN",
+             *     "yourPostKey": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+             *     "vposBaseTime": "2025-06-29T04:00:00+09:00"
+             *   }
+             * }
+             */
+
+            val payload = json.getJSONObject("data")
+            val messageServer = payload.getJSONObject("messageServer")
+
+            val type = messageServer.getString("type")
+            if (type == "niwavided") {
+                listener.onReady(
+                    WatchSessionData(
+                        messageServerUrl = messageServer.getString("uri"),
+                        threadId = payload.getString("threadId"),
+                        yourPostKey = payload.getString("yourPostKey"),
+                        vposBaseTime = ZonedDateTime.parse(payload.getString("vposBaseTime"))
+                    )
+                )
+
+                return
+            }
+
+            Log.e(
+                WatchSession::class.simpleName,
+                "Unsupported message server type: $type"
+            )
+
+            watchSocket.close(1000, "Unsupported message server type.")
+        }
+    }
+
+    override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
+        Log.d(WatchSession::class.simpleName, "WebSocket closed: $reason")
+
+        if (!closeNotify) listener.onClosed()
+    }
+
+    override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
+        Log.d(WatchSession::class.simpleName, "WebSocket error: ${t.message}")
+
+        if (!closeNotify) listener.onClosed()
     }
 
     private fun init(jkId: String) {
         val request = sessionUrlBuilder(jkId)
 
         Log.d(this::class.simpleName, "Connecting to WebSocket: ${request.url}")
-        watchSocket = client.newWebSocket(request, object : okhttp3.WebSocketListener() {
-            override fun onOpen(webSocket: WebSocket, response: Response) {
-                Log.d(WatchSession::class.simpleName, "WebSocket opened: ${response.message}")
+        watchSocket = client.newWebSocket(request, this)
+    }
 
-                sendMessage("{\"type\":\"startWatching\",\"data\":{\"reconnect\":false}}")
-            }
-
-            override fun onMessage(webSocket: WebSocket, text: String) {
-                Log.d(WatchSession::class.simpleName, "⬇️ $text")
-
-                val json = JSONObject(text)
-
-                val messageType = json.getString("type")
-                if (messageType == "room") {
-                    /**
-                     * {
-                     *   "type": "room",
-                     *   "data": {
-                     *     "messageServer": {
-                     *       "uri": "wss://nx-jikkyo.tsukumijima.net/api/v1/channels/jk4/ws/comment",
-                     *       "type": "niwavided"
-                     *     },
-                     *     "name": "アリーナ",
-                     *     "threadId": "12018",
-                     *     "isFirst": true,
-                     *     "waybackkey": "DUMMY_TOKEN",
-                     *     "yourPostKey": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-                     *     "vposBaseTime": "2025-06-29T04:00:00+09:00"
-                     *   }
-                     * }
-                     */
-
-                    val payload = json.getJSONObject("data")
-                    val messageServer = payload.getJSONObject("messageServer")
-
-                    val type = messageServer.getString("type")
-                    if (type == "niwavided") {
-                        listener.onReady(
-                            WatchSessionData(
-                                messageServerUrl = messageServer.getString("uri"),
-                                threadId = payload.getString("threadId"),
-                                yourPostKey = payload.getString("yourPostKey"),
-                                vposBaseTime = ZonedDateTime.parse(payload.getString("vposBaseTime"))
-                            )
-                        )
-
-                        return
-                    }
-
-                    Log.e(
-                        WatchSession::class.simpleName,
-                        "Unsupported message server type: $type"
-                    )
-
-                    watchSocket.close(1000, "Unsupported message server type.")
-                }
-            }
-
-            override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
-                Log.d(WatchSession::class.simpleName, "WebSocket closed: $reason")
-            }
-
-            override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
-                Log.d(WatchSession::class.simpleName, "WebSocket error: ${t.message}")
-            }
-        })
+    fun connect() {
+        init(jkId)
     }
 
     fun close() {
+        closeNotify = false
+
         watchSocket.close(1000, "close")
+        watchSocket.cancel()
     }
 }
