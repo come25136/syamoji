@@ -34,17 +34,15 @@ class WatchSession(private val jkId: String, private val listener: WatchSessionL
         return RequestUtil.requestBuilder("wss://nx-jikkyo.tsukumijima.net/api/v1/channels/${jkId}/ws/watch")
     }
 
-    private lateinit var watchSocket: WebSocket
+    private var watchSocket: WebSocket? = null
 
     private fun sendMessage(message: String) {
         Log.d(WatchSession::class.simpleName, "⬆️ $message")
-        watchSocket.send(message)
+        watchSocket?.send(message)
     }
 
     override fun onOpen(webSocket: WebSocket, response: Response) {
         Log.d(WatchSession::class.simpleName, "WebSocket opened: ${response.message}")
-
-        closeNotify = true
 
         sendMessage("{\"type\":\"startWatching\",\"data\":{\"reconnect\":false}}")
     }
@@ -96,20 +94,20 @@ class WatchSession(private val jkId: String, private val listener: WatchSessionL
                 "Unsupported message server type: $type"
             )
 
-            watchSocket.close(1000, "Unsupported message server type.")
+            watchSocket?.close(1000, "Unsupported message server type.")
         }
     }
 
     override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
         Log.d(WatchSession::class.simpleName, "WebSocket closed: $reason")
 
-        if (!closeNotify) listener.onClosed()
+        if (closeNotify) listener.onClosed()
     }
 
     override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
         Log.d(WatchSession::class.simpleName, "WebSocket error: ${t.message}")
 
-        if (!closeNotify) listener.onClosed()
+        if (closeNotify) listener.onClosed()
     }
 
     private fun init(jkId: String) {
@@ -120,13 +118,15 @@ class WatchSession(private val jkId: String, private val listener: WatchSessionL
     }
 
     fun connect() {
+        closeNotify = true
+
         init(jkId)
     }
 
     fun close() {
         closeNotify = false
 
-        watchSocket.close(1000, "close")
-        watchSocket.cancel()
+        watchSocket?.close(1000, "close")
+        watchSocket?.cancel()
     }
 }

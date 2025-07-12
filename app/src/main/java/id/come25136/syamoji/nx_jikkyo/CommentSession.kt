@@ -35,17 +35,15 @@ class CommentSession(
         return RequestUtil.requestBuilder("wss://nx-jikkyo.tsukumijima.net/api/v1/channels/${jkId}/ws/comment")
     }
 
-    private lateinit var commentSocket: WebSocket
+    private var commentSocket: WebSocket? = null
 
     private fun sendMessage(message: String) {
         Log.d(CommentSession::class.simpleName, "⬆️ $message")
-        commentSocket.send(message)
+        commentSocket?.send(message)
     }
 
     override fun onOpen(webSocket: WebSocket, response: Response) {
         Log.d(CommentSession::class.simpleName, "WebSocket opened: ${response.message}")
-
-        closeNotify = true
 
         sendMessage("[{\"ping\":{\"content\":\"rs:0\"}},{\"ping\":{\"content\":\"ps:0\"}},{\"thread\":{\"version\":\"20061206\",\"thread\":\"${watchSessionData.threadId}\",\"threadkey\":\"${watchSessionData.yourPostKey}\",\"user_id\":\"\",\"res_from\":0}},{\"ping\":{\"content\":\"pf:0\"}},{\"ping\":{\"content\":\"rf:0\"}}]")
 
@@ -83,13 +81,13 @@ class CommentSession(
     override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
         Log.d(CommentSession::class.simpleName, "WebSocket closed: $reason")
 
-        if (!closeNotify) listener.onClosed()
+        if (closeNotify) listener.onClosed()
     }
 
     override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
         Log.d(CommentSession::class.simpleName, "WebSocket error: ${t.message}")
 
-        if (!closeNotify) listener.onClosed()
+        if (closeNotify) listener.onClosed()
     }
 
     private fun init(jkId: String, watchSessionData: WatchSessionData) {
@@ -102,13 +100,15 @@ class CommentSession(
     }
 
     fun connect(watchSessionData: WatchSessionData) {
+        closeNotify = true
+
         init(jkId, watchSessionData)
     }
 
     fun close() {
         closeNotify = false
 
-        commentSocket.close(1000, "close")
-        commentSocket.cancel()
+        commentSocket?.close(1000, "close")
+        commentSocket?.cancel()
     }
 }
